@@ -9,10 +9,11 @@ let options = {
     textAlign:"center",
     textBaseline:"middle",
     lineWidth:5,
+    lineCap: "round",
+    lineJoin: "round",
     r:5,
     type:'stroke',
-    lineCap: "round",
-    lineJoin: "round"
+    
     // globalCompositeOperation:"source-over"
 }
 function setTheme(themeOptions){
@@ -28,9 +29,11 @@ function strokeLine(extendOptions){
     let option = {
         // ctx, x0, y0, x1, y1, 
         color: options.color,
-        lineWidth: options.lineWidth
+        lineWidth: options.lineWidth,
+        lineCap: options.lineCap,
+        lineJoin: options.lineJoin
     }
-    let {ctx, x0, y0, x1, y1, color, lineWidth,lineCap, lineJoin, globalCompositeOperation} = Object.assign({},option,extendOptions);
+    let {ctx, x0, y0, x1, y1, color, lineWidth, lineCap, lineJoin, globalCompositeOperation} = Object.assign({},option,extendOptions);
     ctx.strokeStyle = color;
     ctx.lineWidth = lineWidth;
     ctx.lineCap = lineCap;
