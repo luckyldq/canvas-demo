@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>canvas 签名工具</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    .autograph-box {
+      width: 100%;
+      height: 300px;padding:0;margin: 0;
+    }
+    .btns{
+        position: fixed;bottom: 10px;left: 0;
+    }
+</style>
+</head>
+<body>
+    <div class="autograph-box"></div>
+    <div class="btns">
+        <button onclick="onReset()">重置</button>
+        <button>导出图片base64</button>
+        <button onclick="changeScreen()">竖屏/横屏</button>
+    </div>
+    <script src="index.js"></script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+          var vConsole = new VConsole();
+    </script>
+</body>
+</html>

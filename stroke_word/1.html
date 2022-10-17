@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>田字格</title>
+    <style>
+        #myCanvas{
+            border: 1px solid #000;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas"></canvas>
+    <script type="module">
+        import {strokeLine, strokeDashLine, strokeText} from '../canvas.js'
+
+        let canvas = document.getElementById('myCanvas'),
+            ctx = canvas.getContext('2d');
+        
+        let w = 400,
+            h = 400;
+        canvas.width = w;
+        canvas.height = h;
+
+        strokeLine(ctx, w/2, 0, w/2, h);
+        strokeLine(ctx, 0, h/2, w, h/2);
+        
+        strokeDashLine(ctx, 0, 0, w, h, 'pink', [3,3]);
+        strokeDashLine(ctx, w, 0, 0, h, 'pink', [3,3]);
+        
+        strokeText(ctx, '米', 200, 200);
+        
+        
+    </script>
+</body>
+</html>

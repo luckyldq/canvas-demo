@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>刮彩票</title>
+    <style>
+        .ward{
+            position:absolute;left:0;top:0;width: 400px;height: 400px;font-size: 20px;text-align: center;line-height: 400px;z-index: -1;
+        }
+        #myCanvas{
+            border: 1px solid #000;cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <p class="ward">刮开有奖：再来一瓶</p>
+    <canvas id="myCanvas"></canvas>
+    <script type="module">
+        import {drawRect, strokeLine, strokeDashLine, drawText, drawCircle,drawSector} from '../canvas.js'
+
+        let canvas = document.getElementById('myCanvas'),
+            ctx = canvas.getContext('2d');
+        
+        let w = 400,
+            h = 400;
+        canvas.width = w;
+        canvas.height = h;
+
+        drawRect({
+            ctx,
+            x:1,
+            y:1,
+            w:400,
+            h:400,
+            color:'gray',
+            type:'fill'
+        })
+        
+        // drawCircle({
+        //     ctx, 
+        //     x:10,
+        //     y:10,
+        //     type:'fill',
+        //     globalCompositeOperation:"destination-out"
+        // })
+
+        
+
+        // 阻止选中文字事件
+        // canvas.addEventListener('selectstart',function(e){
+        //     e.preventDefault();
+        // },false);
+        
+        let x1,
+            y1;
+        canvas.addEventListener('mousedown',function(e){
+            let x0 = e.offsetX,
+                y0 = e.offsetY;
+            // console.log(x, y);
+            strokeLine({
+                ctx, 
+                x0,
+                y0,
+                x1:x1??x0, 
+                y1:y1??y0,
+                type:'stroke',
+                lineWidth:20,
+                globalCompositeOperation:"destination-out"
+            })
+            x1 = x0;
+            y1 = y0;
+        },false);
+        
+    </script>
+</body>
+</html>
