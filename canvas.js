@@ -19,6 +19,21 @@ let options = {
 function setTheme(themeOptions){
     options = Object.assign({}, options, themeOptions);
 }
+/**
+ * 窗口坐标转化为基于Canvas的坐标，
+ * bbox的宽高可能会受到style中的width/height的影响
+ * @param canvas
+ * @param x
+ * @param y
+ * @returns {{x: number, y: number}}
+ */
+function windowToCanvas(canvas,x,y) {
+    var bbox = canvas.getBoundingClientRect();
+    return {
+        x:x-bbox.left*(canvas.width/bbox.width),
+        y:y-bbox.top*(canvas.height/bbox.height)
+    }
+}
 /* 
 绘制直线
 ctx：
