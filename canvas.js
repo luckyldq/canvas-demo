@@ -95,6 +95,7 @@ function drawText(extendOptions){
         font: options.font,
         textAlign: options.textAlign,
         textBaseline: options.textBaseline,
+        color:options.color
     }
     let {ctx, text, x, y, font, type, textAlign, textBaseline, color, globalCompositeOperation} = Object.assign({},option,extendOptions);
     ctx.beginPath();
