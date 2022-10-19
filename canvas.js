@@ -8,9 +8,9 @@ let options = {
     font:"20px 宋体",
     textAlign:"center",
     textBaseline:"middle",
-    lineWidth:5,
-    lineCap: "round",
-    lineJoin: "round",
+    lineWidth:1,
+    lineCap: "butt",
+    lineJoin: "miter",
     r:5,
     type:'stroke',
     
@@ -34,6 +34,7 @@ function windowToCanvas(canvas,x,y) {
         y:y-bbox.top*(canvas.height/bbox.height)
     }
 }
+/////////// 绘制基础图形 ////////////////
 /* 
 绘制直线
 ctx：
@@ -45,14 +46,14 @@ function strokeLine(extendOptions){
         // ctx, x0, y0, x1, y1, 
         color: options.color,
         lineWidth: options.lineWidth,
-        lineCap: options.lineCap,
-        lineJoin: options.lineJoin
+        // lineCap: options.lineCap,
+        // lineJoin: options.lineJoin
     }
     let {ctx, x0, y0, x1, y1, color, lineWidth, lineCap, lineJoin, globalCompositeOperation} = Object.assign({},option,extendOptions);
     ctx.strokeStyle = color;
     ctx.lineWidth = lineWidth;
-    ctx.lineCap = lineCap;
-    ctx.lineJoin = lineJoin;
+    lineCap && (ctx.lineCap = lineCap);
+    lineJoin && (ctx.lineJoin = lineJoin);
     ctx.beginPath();
     ctx.moveTo(x0, y0);
     ctx.lineTo(x1, y1);
@@ -178,7 +179,40 @@ function _fillGraph(ctx, color){
     ctx.fillStyle = color;
     ctx.fill();
 }
-
+/////////// 绘制复杂业务图形 ////////////////
+/* 
+绘制十字线
+*/
+function drawCrossLine(extendOptions){
+    let option = {
+        // ctx, x, y
+    }
+    let {ctx, x, y, color, lineWidth, globalCompositeOperation} = Object.assign({},option,extendOptions);
+    // 横向
+    strokeLine({
+        ctx, 
+        x0: 0, 
+        y0: y, 
+        x1: ctx.canvas.width, 
+        y1: y,
+        color,
+        lineWidth,
+        globalCompositeOperation
+    });
+    // 纵向
+    strokeLine({
+        ctx, 
+        x0: x, 
+        y0: 0, 
+        x1: x, 
+        y1: ctx.canvas.height,
+        color,
+        lineWidth,
+        globalCompositeOperation
+    });
+}
+        
+            
 export {
     setTheme,
     strokeLine,
@@ -186,5 +220,6 @@ export {
     drawText,
     drawRect,
     drawSector,
-    drawCircle
+    drawCircle,
+    drawCrossLine
 };
