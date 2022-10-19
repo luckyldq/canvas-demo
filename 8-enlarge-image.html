@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>放大橡皮筋选框中的图片</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    .select-box{
+        position: absolute;
+        /* width: 100px;height: 100px;left: 0;right: 0; */display: none;
+        border: 1px solid red;
+    }
+    canvas{
+        border: 1px solid #000;margin: 10px;
+    }
+</style>
+</head>
+<body>
+    <div class="canvas-box">
+        <div class="select-box"></div>
+        <canvas id="mycanvas"></canvas>
+    </div>
+    <script>
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+        let w = 400,
+            h = 400;
+        canvas.width = w;
+        canvas.height = h;
+
+        let img = new Image();
+        img.src = './images/arch.png';
+        img.onload = function(){
+            ctx.drawImage(img,0,0,w,h);
+        }
+
+        let selectBox = document.querySelector('.select-box');
+
+        let isDrag = false;
+        let mouseDownPosition = { // 鼠标按下的位置
+            x:0,
+            y:0
+        }
+        let rubberPosition = { // 橡皮筋的位置和尺寸
+            left:0,
+            top:0,
+            width:0,
+            height:0
+        }
+        
+        canvas.addEventListener('mousedown', mouseDown);
+        // canvas.addEventListener('mousemove', mouseMove); // 画大div没问题，画小div时，鼠标事件在div上了，canvas无法监听
+        window.addEventListener('mousemove', mouseMove);
+        window.addEventListener('mouseup', mouseUp);
+
+        let canvasRect = canvas.getBoundingClientRect();
+        console.log(canvasRect)
+
+        function mouseDown(e){
+            hideSelectBox();
+            isDrag = true;
+            mouseDownPosition.x = e.clientX;
+            mouseDownPosition.y = e.clientY;
+            showSelectBox()
+            e.preventDefault();
+        }
+        function mouseMove(e){
+            if(!isDrag) return false;
+            // 绘制div的位置使用的是鼠标相对于屏幕的位置，clientX/Y
+            setPosition(e.clientX, e.clientY);
+            selectBoxStyle();
+            e.preventDefault();
+        }
+        function mouseUp(){
+            isDrag = false;
+            rubberEnd();
+            hideSelectBox();
+        }
+        function setPosition(x, y){
+            rubberPosition.left = x < mouseDownPosition.x ? x : mouseDownPosition.x;
+            rubberPosition.top = y < mouseDownPosition.y ? y : mouseDownPosition.y;
+            rubberPosition.width = Math.abs(x - mouseDownPosition.x);
+            rubberPosition.height = Math.abs(y - mouseDownPosition.y);
+        }
+        function showSelectBox(){
+            selectBox.style.display = 'block';
+        }
+        function hideSelectBox(){
+            selectBox.style.display = 'none';
+        }
+        function selectBoxStyle(){
+            selectBox.style.left = rubberPosition.left + 'px';
+            selectBox.style.top = rubberPosition.top + 'px';
+            selectBox.style.width = rubberPosition.width + 'px';
+            selectBox.style.height = rubberPosition.height + 'px';
+        }
+        // 放大框中的图片区域
+        function rubberEnd(){
+            let bbox = canvas.getBoundingClientRect();
+            ctx.drawImage(
+                canvas,
+                rubberPosition.left - bbox.left - 1, // 1px的边框
+                rubberPosition.top - bbox.top - 1,
+                rubberPosition.width,
+                rubberPosition.height,
+                0,0,w,h
+            );
+        }
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>
