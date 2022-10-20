@@ -33,7 +33,7 @@
         canvas.height = h;
 
         let img = new Image();
-        img.src = './images/arch.png';
+        img.src = '../images/arch.png';
         img.onload = function(){
             ctx.drawImage(img,0,0,w,h);
         }
@@ -79,6 +79,9 @@
             isDrag = false;
             rubberEnd();
             hideSelectBox();
+            // 清除数据
+            resetData();
+            selectBoxStyle();
         }
         function setPosition(x, y){
             rubberPosition.left = x < mouseDownPosition.x ? x : mouseDownPosition.x;
@@ -97,6 +100,14 @@
             selectBox.style.top = rubberPosition.top + 'px';
             selectBox.style.width = rubberPosition.width + 'px';
             selectBox.style.height = rubberPosition.height + 'px';
+        }
+        function resetData(){
+            rubberPosition = { // 橡皮筋的位置和尺寸
+                left:0,
+                top:0,
+                width:0,
+                height:0
+            }
         }
         // 放大框中的图片区域
         function rubberEnd(){
