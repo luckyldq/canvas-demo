@@ -248,6 +248,7 @@ function drawCrossLine(extendOptions){
 }
 /* 
 绘制网格
+初始值等于0.5的原因：canvas处理像素边界的规则；
 */
 function drawGrid(extendOptions){
     let option = {
@@ -258,8 +259,8 @@ function drawGrid(extendOptions){
     let {ctx, stepX, stepY, style, lineWidth,  globalCompositeOperation} = Object.assign({},option,extendOptions);
     const w = ctx.canvas.width;
     const h = ctx.canvas.height;
-    let x=0,
-        y=0;
+    let x=0.5,
+        y=0.5;
     while(x < w){
         strokeLine({
             ctx, 

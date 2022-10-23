@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>非零原则绘制剪纸效果 -- 控制路径方向</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    .select-box{
+        position: absolute;
+        /* width: 100px;height: 100px;left: 0;right: 0; */display: none;
+        border: 1px solid red;
+    }
+    canvas{
+        /* border: 1px solid #000;margin: 10px; */
+    }
+</style>
+</head>
+<body>
+    <div class="canvas-box">
+        <div class="select-box"></div>
+        <canvas id="mycanvas"></canvas>
+    </div>
+    <script type="module">
+        import {drawGrid} from '../canvas.js'
+
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+        let w = 400,
+            h = 400;
+        canvas.width = w;
+        canvas.height = h;
+
+        draw();
+        
+        function draw(){
+            drawGrid({
+                ctx,
+                lineWidth:0.5,
+                style:'lightgray'
+            });
+            
+            ctx.shadowColor = 'rgba(0,0,0,0.8)';
+            ctx.shadowOffsetX = 12;
+            ctx.shadowOffsetY = 12;
+            ctx.shadowBlur = 15;
+
+            ctx.beginPath();
+            // 逆时针
+            drawAntiRect(ctx,50,50,200,200);
+            ctx.rect(60,60,50,50); // 正方形剪纸
+            ctx.moveTo(120,120); // 移除路径之间的默认连线
+            ctx.arc(120,120,30,0,2*Math.PI,false);
+            ctx.closePath();
+
+            ctx.fillStyle = '';
+            ctx.fill();
+            ctx.stroke();
+        }
+        /* 
+        绘制逆时针方形路径，
+        ctx.rect()绘制的是顺时针方形路径
+        */
+        function drawAntiRect(ctx, x, y, w, h){
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + h);
+            ctx.lineTo(x + w, y + h);
+            ctx.lineTo(x + w, y);
+        }
+
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>

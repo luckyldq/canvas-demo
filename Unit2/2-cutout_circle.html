@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>非零原则绘制剪纸效果 -- 控制路径方向</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    .select-box{
+        position: absolute;
+        /* width: 100px;height: 100px;left: 0;right: 0; */display: none;
+        border: 1px solid red;
+    }
+    canvas{
+        /* border: 1px solid #000;margin: 10px; */
+    }
+</style>
+</head>
+<body>
+    <div class="canvas-box">
+        <div class="select-box"></div>
+        <canvas id="mycanvas"></canvas>
+    </div>
+    <script type="module">
+        import {drawGrid} from '../canvas.js'
+
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+        let w = 400,
+            h = 400;
+        canvas.width = w;
+        canvas.height = h;
+
+        // 设置填充和描边风格
+        ctx.fillStyle = 'rgba(100,140,230,0.5)';
+        ctx.strokeStyle = ctx.fillStyle;
+
+        draw();
+        
+        function draw(){
+            ctx.clearRect(0, 0, w, h);
+            
+            drawGrid({
+                ctx,
+                lineWidth:0.5,
+                style:'lightgray'
+            });
+
+            ctx.save();
+
+            ctx.shadowColor = 'rgba(0,0,0,0.8)';
+            ctx.shadowOffsetX = 12;
+            ctx.shadowOffsetY = 12;
+            ctx.shadowBlur = 15;
+
+            drawTwoCircle();
+
+            ctx.restore();
+        }
+
+        /* 
+        一个源顺时针，一个圆逆时针，
+        右侧会有一条直线：
+            右侧直线是连接两个圆的；
+            子路径之间会用线连接；
+        去掉这条线的方法
+        */
+        function drawTwoCircle(){
+            ctx.beginPath();
+            ctx.arc(200,200,100,0,2*Math.PI,false);
+            ctx.moveTo(250,200); // 消除中间线
+            ctx.arc(200,200,50,0,2*Math.PI,true);
+            ctx.fill();
+            ctx.shadowColor = undefined;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+            ctx.stroke();
+        }
+
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>
