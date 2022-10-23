@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>渐变和style样式</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    .select-box{
+        position: absolute;
+        /* width: 100px;height: 100px;left: 0;right: 0; */display: none;
+        border: 1px solid red;
+    }
+    canvas{
+        border: 1px solid #000;margin: 10px;
+    }
+</style>
+</head>
+<body>
+    <div class="canvas-box">
+        <div class="select-box"></div>
+        <canvas id="mycanvas"></canvas>
+    </div>
+    <script type="module">
+        import {setShadowStyle} from '../canvas.js'
+
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+        let w = 400,
+            h = 400;
+        canvas.width = w;
+        canvas.height = h;
+        
+        // 创建一个线性渐变对象 
+        let linear = ctx.createLinearGradient(0,0,100,0);
+        linear.addColorStop(0, 'green');
+        linear.addColorStop(1, 'red');
+
+        // 画一个正方形
+        ctx.rect(10,10,100,100);
+        ctx.fillStyle = linear;
+        ctx.fill();
+
+        // 创建一个径向渐变对象
+        let radial = ctx.createRadialGradient(200,200,0, 200,200,100);
+        radial.addColorStop(0,  'green');
+        radial.addColorStop(1,  'red');
+        ctx.beginPath();
+        ctx.arc(200,200,100,0,Math.PI*2);
+        ctx.fillStyle = radial;
+        ctx.fill();
+
+        // 设置透明度
+        ctx.beginPath();
+        ctx.globalAlpha = 0.5;
+        ctx.rect(60, 60, 100, 100);
+        ctx.fillStyle = 'orange';
+        ctx.fill();
+
+        // 填充图案 变换--缩放，位移
+        // debugger
+        let image = new Image();
+        image.src = '../images/arch.png';
+        image.onload = function(){
+            ctx.beginPath();
+            ctx.globalAlpha = 1;
+
+            // 矩阵是在坐标原点开始的，缩放默认中心点是左上角，需要使用变换适配到目标图形的位置
+            // 矩阵变换后返回一个新的矩阵
+            let matrix = new DOMMatrix();
+            matrix = matrix.translate(130,10);
+            matrix = matrix.scale(100/image.width, 100/image.height);
+
+            let pattern = ctx.createPattern(image, 'no-repeat');
+            pattern.setTransform(matrix);
+            
+            ctx.rect(130,10,100,100);
+            // ctx.strokeStyle = '#000';
+            // ctx.stroke();
+            ctx.fillStyle = pattern;
+            ctx.fill();
+            // 先填充再描边，貌似涉及层级的问题，设置阴影时，边框会显示在填充上
+            // 先描边再填充，没这个问题
+            // ctx.strokeStyle = '#000';
+            // ctx.stroke();
+            ctx.closePath();
+        }
+        ctx.save();
+        ctx.beginPath();
+        ctx.globalAlpha = 1;
+        ctx.font = '60px 宋体';
+        ctx.fillStyle = '#000'
+        // 绘制阴影  正数像外浮效果  负数像内嵌效果  
+        // 阴影效果需要使用save/restore来隔离，不用save则会影响到之前的图像
+        setShadowStyle({
+            ctx
+        });
+        ctx.fillText('米',300, 100);
+        ctx.restore();
+
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>
