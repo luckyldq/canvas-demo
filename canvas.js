@@ -15,7 +15,8 @@ let options = {
     r:5,
     // type:'stroke',  // 考虑到可能会同时描边和填充的情况，扩展成isStroke和isFill
     isStroke:true,  // 默认描边
-    isFill:false    // 是否填充
+    isFill:false,    // 是否填充
+    fillStyle: 'black',
     // style:'', // 颜色，渐变，图案
     // globalCompositeOperation:"source-over"  // 图像混合模式
     // extendStyle:function(){}  // 用来扩展其他样式
@@ -27,15 +28,16 @@ function setTheme(themeOptions){
  * 窗口坐标转化为基于Canvas的坐标，
  * bbox的宽高可能会受到style中的width/height的影响
  * @param canvas
- * @param x
+ * @param x ： 如：pointer.clientX
  * @param y
  * @returns {{x: number, y: number}}
  */
-function windowToCanvas(canvas,x,y) {
+function windowToCanvas(ctx,x,y) {
+    let canvas = ctx.canvas;
     var bbox = canvas.getBoundingClientRect();
     return {
-        x:x-bbox.left*(canvas.width/bbox.width),
-        y:y-bbox.top*(canvas.height/bbox.height)
+        x: x - bbox.left*(canvas.width/bbox.width),
+        y: y - bbox.top*(canvas.height/bbox.height)
     }
 }
 /////////// 绘制基础图形 ////////////////
@@ -100,9 +102,10 @@ function drawText(extendOptions){
         textBaseline: options.textBaseline,
         style:options.style,
         isStroke:options.isStroke,
-        isFill:options.isFill
+        isFill:options.isFill,
+        fillStyle: options.fillStyle
     }
-    let {ctx, text, x, y, font, isStroke, isFill, textAlign, textBaseline, style, globalCompositeOperation} = Object.assign({},option,extendOptions);
+    let {ctx, text, x, y, font, isStroke, isFill, textAlign, textBaseline, style, fillStyle, globalCompositeOperation} = Object.assign({},option,extendOptions);
     ctx.beginPath();
     ctx.font = font;
     ctx.textAlign = textAlign;
@@ -114,7 +117,7 @@ function drawText(extendOptions){
         ctx.strokeText(text,  x, y);
     }
     if(isFill){
-        ctx.fillStyle = style;
+        ctx.fillStyle = fillStyle;
         ctx.fillText(text,  x, y);
     }
 }
@@ -126,14 +129,15 @@ function drawRect(extendOptions){
         // ctx, x, y, w, h,
         style: options.style,
         isStroke:options.isStroke,
-        isFill:options.isFill
+        isFill:options.isFill,
+        fillStyle: options.fillStyle
     }
-    let {ctx, x, y, w, h, isStroke, isFill, style, globalCompositeOperation} = Object.assign({},option,extendOptions);
+    let {ctx, x, y, w, h, isStroke, isFill, style, fillStyle, globalCompositeOperation} = Object.assign({},option,extendOptions);
     ctx.beginPath();
     ctx.rect(x, y, w, h);
     _setComposite(ctx, globalCompositeOperation);
     isStroke && _strokeGraph(ctx, style);
-    isFill && _fillGraph(ctx, style);
+    isFill && _fillGraph(ctx, fillStyle);
 }
 /* 
 绘制扇形
@@ -145,14 +149,15 @@ function drawSector(extendOptions){
         style: options.style,
         counterclockwise: false,
         isStroke:options.isStroke,
-        isFill:options.isFill
+        isFill:options.isFill,
+        fillStyle: options.fillStyle
     }
-    let {ctx, x, y, r, deg1, deg2, counterclockwise, isStroke, isFill, style, globalCompositeOperation} = Object.assign({},option,extendOptions);
+    let {ctx, x, y, r, deg1, deg2, counterclockwise, isStroke, isFill, style, fillStyle, globalCompositeOperation} = Object.assign({},option,extendOptions);
     ctx.beginPath();
     ctx.arc(x, y, r, deg1, deg2, counterclockwise);
     _setComposite(ctx, globalCompositeOperation);
     isStroke && _strokeGraph(ctx, style);
-    isFill && _fillGraph(ctx, style);
+    isFill && _fillGraph(ctx, fillStyle);
 }
 /* 
 绘制圆形
@@ -163,14 +168,15 @@ function drawCircle(extendOptions){
         r: options.r,
         style: options.style,
         isStroke:options.isStroke,
-        isFill:options.isFill
+        isFill:options.isFill,
+        fillStyle: options.fillStyle
     }
-    let {ctx, x, y, r, isStroke, isFill, style, globalCompositeOperation} = Object.assign({},option,extendOptions);
+    let {ctx, x, y, r, isStroke, isFill, style, fillStyle, globalCompositeOperation} = Object.assign({},option,extendOptions);
     ctx.beginPath();
     ctx.arc(x, y, r, 0, 2*Math.PI, false);
     _setComposite(ctx, globalCompositeOperation);
     isStroke && _strokeGraph(ctx, style);
-    isFill && _fillGraph(ctx, style);
+    isFill && _fillGraph(ctx, fillStyle);
 }
 /* 
 设置图形叠加模式
@@ -221,6 +227,7 @@ function setShadowStyle(extendOptions){
 function drawCrossLine(extendOptions){
     let option = {
         // ctx, x, y
+        lineWidth:0.5
     }
     let {ctx, x, y, style, lineWidth, globalCompositeOperation} = Object.assign({},option,extendOptions);
     // 横向
@@ -254,7 +261,9 @@ function drawGrid(extendOptions){
     let option = {
         // ctx, 
         stepX:10,
-        stepY:10
+        stepY:10,
+        style:'lightgray',
+        lineWidth:0.5
     }
     let {ctx, stepX, stepY, style, lineWidth,  globalCompositeOperation} = Object.assign({},option,extendOptions);
     const w = ctx.canvas.width;
@@ -288,9 +297,25 @@ function drawGrid(extendOptions){
         y += stepY;
     }
 }
-
+/* 
+绘制环形
+关键点：设置路径的方向，非0环绕原则填充
+*/
+function drawLoop({
+    ctx,x,y,r1,
+    deltaR,
+    style
+}){
+    ctx.beginPath();
+    ctx.arc(x, y, r1, 0, 2*Math.PI, false);
+    ctx.moveTo(x,y); // 隐藏路径之间的横线
+    ctx.arc(x, y, r1+deltaR, 0, 2*Math.PI, true);
+    ctx.fillStyle = style;
+    ctx.fill();
+}
             
 export {
+    windowToCanvas,
     setTheme,
     strokeLine,
     strokeDashLine,
@@ -300,5 +325,6 @@ export {
     drawCircle,
     setShadowStyle,
     drawCrossLine,
-    drawGrid
+    drawGrid,
+    drawLoop
 };

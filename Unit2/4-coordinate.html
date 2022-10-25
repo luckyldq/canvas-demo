@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>坐标轴绘制</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    .select-box{
+        position: absolute;
+        /* width: 100px;height: 100px;left: 0;right: 0; */display: none;
+        border: 1px solid red;
+    }
+    canvas{
+        border: 1px solid #000;margin: 10px;
+    }
+</style>
+</head>
+<body>
+    <div class="canvas-box">
+        <div class="select-box"></div>
+        <canvas id="mycanvas"></canvas>
+    </div>
+    <script type="module">
+        import {strokeLine} from '../canvas.js'
+
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+        let w = 400,
+            h = 400;
+        canvas.width = w;
+        canvas.height = h;
+
+        const AXIS_MARGIN = 40,  // 坐标轴外边距
+              AXIS_ORIGIN = {  // 坐标轴原点
+                  x: AXIS_MARGIN,
+                  y: h - AXIS_MARGIN
+              },
+              // 两个端点
+              x_right = w - AXIS_MARGIN,
+              y_top = AXIS_MARGIN;
+
+        const TICK_SPACING = 10,
+              TICK_HEIGHT = 5;
+
+        drawAxis();
+        drawXticks();
+        drawYticks();
+
+        /* 画轴线 */
+        function drawAxis(){
+            ctx.beginPath();
+            ctx.moveTo(AXIS_ORIGIN.x, y_top);
+            ctx.lineTo(AXIS_ORIGIN.x, AXIS_ORIGIN.y);
+            ctx.lineTo(x_right, AXIS_ORIGIN.y);
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+        }
+        /* 绘制刻度 */
+        function drawXticks(){
+            let x = AXIS_ORIGIN.x + TICK_SPACING;
+            let y = AXIS_ORIGIN.y;
+            let max = Math.floor((x_right - AXIS_ORIGIN.x)/TICK_SPACING);
+            for(let i=1;i<max;i++){
+                strokeLine({
+                    ctx,
+                    x0:x,
+                    y0:y,
+                    x1:x,
+                    y1:y - (i%5 == 0?2:1)*TICK_HEIGHT
+                });
+                x += TICK_SPACING;
+            }
+        }
+        function drawYticks(){
+            let x = AXIS_ORIGIN.x;
+            let y = AXIS_ORIGIN.y - TICK_SPACING;
+            let max = Math.floor((AXIS_ORIGIN.y - y_top)/TICK_SPACING);
+            for(let i=1;i<max;i++){
+                strokeLine({
+                    ctx,
+                    x0:x,
+                    y0:y,
+                    x1:x + (i%5 == 0?2:1)*TICK_HEIGHT,
+                    y1:y
+                });
+                y -= TICK_SPACING;
+            }
+        }
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>

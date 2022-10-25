@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>拖拽画圆</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    .select-box{
+        position: absolute;
+        /* width: 100px;height: 100px;left: 0;right: 0; */display: none;
+        border: 1px solid red;
+    }
+    canvas{
+        border: 1px solid #000;margin: 10px;
+    }
+</style>
+</head>
+<body>
+    <div class="canvas-box">
+        <div class="select-box"></div>
+        <canvas id="mycanvas"></canvas>
+    </div>
+    <script type="module">
+        import {windowToCanvas, drawCircle, drawCrossLine} from '../canvas.js'
+
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d',{willReadFrequently: true});
+        let w = 400,
+            h = 400;
+        canvas.width = w;
+        canvas.height = h;
+
+        // 圆心
+        let centerDot = {
+            // x:0, y:0
+        };
+        let isDrawing = false;
+        let canvasData; // 记录canvas的绘制内容
+
+        canvas.addEventListener('mousedown',mouseDown);
+        canvas.addEventListener('mousemove',mouseMove);
+        canvas.addEventListener('mouseup',mouseUp);
+
+        function mouseDown(e){
+            isDrawing = true;
+            centerDot = windowToCanvas(ctx, e.clientX, e.clientY);
+            canvasData = ctx.getImageData(0,0,w,h);
+            // console.log(centerDot);
+            e.preventDefault();
+        }
+        // 绘制圆和辅助线
+        function mouseMove(e){
+            if(!isDrawing){ return false; }
+            ctx.clearRect(0,0,w,h);
+            ctx.putImageData(canvasData,0,0);
+            let curDot = windowToCanvas(ctx, e.clientX, e.clientY);
+            drawCircle({
+                ctx, 
+                x: centerDot.x, 
+                y: centerDot.y, 
+                r: Math.sqrt(Math.pow(curDot.x-centerDot.x, 2) + Math.pow(curDot.y-centerDot.y, 2)),
+                style:'#f00'
+            });
+            drawCrossLine({
+                ctx,
+                x: curDot.x, 
+                y: curDot.y,
+                style:'lightblue'
+            });
+        }
+        // 只绘制圆
+        function mouseUp(e){
+            isDrawing = false;
+            ctx.putImageData(canvasData,0,0);
+            let curDot = windowToCanvas(ctx, e.clientX, e.clientY);
+            drawCircle({
+                ctx, 
+                x: centerDot.x, 
+                y: centerDot.y, 
+                r: Math.sqrt(Math.pow(curDot.x-centerDot.x, 2) + Math.pow(curDot.y-centerDot.y, 2)),
+                style:'#f00'
+            });
+        }
+
+
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>
