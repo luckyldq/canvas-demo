@@ -313,6 +313,48 @@ function drawLoop(extendOptions){
     ctx.fillStyle = style;
     ctx.fill();
 }
+// 绘制正多边形
+function _getPolygonPoints(ctx, x, y, r, lineNums){
+    let points = [];
+    // 每个角度
+    const perAngle = 2*Math.PI / lineNums;
+    for(let i=0; i<lineNums; i++){
+        let curAngle = i * perAngle;
+        points.push([
+            r * Math.cos(curAngle) + x,
+            r * Math.sin(curAngle) + y
+        ]);
+    }
+    return points;
+}
+/* 
+x,y,r：外接圆圆心和半径
+*/
+function drawPolygon(extendOptions){
+    let option = {
+        // ctx, x, y
+        r: options.r,
+        lines: 3,
+        style: options.style,
+        isStroke:options.isStroke,
+        isFill:options.isFill,
+        fillStyle: options.fillStyle
+    };
+    let {ctx, x, y, r, lines, isStroke, isFill, style, fillStyle} = Object.assign({},option,extendOptions);
+    let points = _getPolygonPoints(ctx, x, y, r, lines);
+    // lineTo和moveTo用反了，导致渲染没效果，T_T
+    for(let i=0; i<points.length; i++){
+        let point = points[i];
+        if(i == 0){
+            ctx.moveTo(point[0], point[1]);
+        }else{
+            ctx.lineTo(point[0], point[1]);
+        }
+    }
+    ctx.closePath();
+    isStroke && _strokeGraph(ctx, style);
+    isFill && _fillGraph(ctx, fillStyle);
+}
             
 export {
     windowToCanvas,
@@ -326,5 +368,6 @@ export {
     setShadowStyle,
     drawCrossLine,
     drawGrid,
-    drawLoop
+    drawLoop,
+    drawPolygon
 };
