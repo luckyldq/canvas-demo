@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>贝塞尔曲线绘制圆角三角形</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    .select-box{
+        position: absolute;
+        /* width: 100px;height: 100px;left: 0;right: 0; */display: none;
+        border: 1px solid red;
+    }
+    canvas{
+        /* border: 1px solid #000; */
+        margin: 10px;
+        -webkit-box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+        -moz-box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+        box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+    }
+</style>
+</head>
+<body>
+    <div class="canvas-box">
+        <div class="select-box"></div>
+        <canvas id="mycanvas"></canvas>
+    </div>
+    <script type="module">
+        import {drawCircle, strokeLine} from '../canvas.js'
+
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d',{willReadFrequently: true});
+        let w = 650,
+            h = 450;
+        canvas.width = w;
+        canvas.height = h;
+        
+        // 先绘制三角形 
+        ctx.beginPath();
+        ctx.moveTo(120, 100);
+        // 左-上-圆角
+        ctx.quadraticCurveTo(100, 100, 100, 120);
+        ctx.lineTo(100, 280);
+        // 左下圆角
+        ctx.quadraticCurveTo(100, 300, 120, 280);
+        ctx.lineTo(280, 120);
+        ctx.quadraticCurveTo(300, 100, 280, 100);
+        ctx.closePath();
+        ctx.stroke();
+
+        // 起点
+        drawCircle({
+            ctx,
+            x: 120,
+            y:100,
+            r:4,
+            isFill:true,
+            fillStyle:'green'
+        });
+        drawCircle({
+            ctx,
+            x: 100,
+            y:280,
+            r:4,
+            isFill:true,
+            fillStyle:'green'
+        });
+        drawCircle({
+            ctx,
+            x:280,
+            y:120,
+            r:4,
+            isFill:true,
+            fillStyle:'green'
+        });
+        // 控制点
+        drawCircle({
+            ctx,
+            x: 100,
+            y:100,
+            r:4,
+            isFill:true,
+            fillStyle:'red'
+        });
+        drawCircle({
+            ctx,
+            x: 100,
+            y:300,
+            r:4,
+            isFill:true,
+            fillStyle:'red'
+        });
+        drawCircle({
+            ctx,
+            x: 300,
+            y:100,
+            r:4,
+            isFill:true,
+            fillStyle:'red'
+        });
+        // 终点
+        drawCircle({
+            ctx,
+            x: 100,
+            y:120,
+            r:4,
+            isFill:true,
+            fillStyle:'blue'
+        });
+        drawCircle({
+            ctx,
+            x: 120,
+            y:280,
+            r:4,
+            isFill:true,
+            fillStyle:'blue'
+        });
+        drawCircle({
+            ctx,
+            x: 280,
+            y:100,
+            r:4,
+            isFill:true,
+            fillStyle:'blue'
+        });
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>

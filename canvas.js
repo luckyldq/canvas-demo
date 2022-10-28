@@ -24,8 +24,8 @@ let options = {
 function setTheme(themeOptions){
     options = Object.assign({}, options, themeOptions);
 }
+// 窗口坐标转化为基于Canvas的坐标，
 /**
- * 窗口坐标转化为基于Canvas的坐标，
  * bbox的宽高可能会受到style中的width/height的影响
  * @param canvas
  * @param x ： 如：pointer.clientX
@@ -41,8 +41,8 @@ function windowToCanvas(ctx,x,y) {
     }
 }
 /////////// 绘制基础图形 ////////////////
+// 绘制直线
 /* 
-绘制直线
 ctx：
 x0, y0：绘制起点
 x1, y1：绘制终点
@@ -66,8 +66,8 @@ function strokeLine(extendOptions){
     _setComposite(ctx, globalCompositeOperation);
     ctx.stroke();
 }
+// 绘制虚线
 /* 
-绘制虚线
 ctx：
 x0, y0：绘制起点
 x1, y1：绘制终点
@@ -91,9 +91,7 @@ function strokeDashLine(extendOptions){
     // 部分浏览器bug，需要手动重置
     ctx.setLineDash([]);
 }
-/* 
-绘制文字
-*/
+// 绘制文字
 function drawText(extendOptions){
     let option = {
         // ctx, text, x, y,
@@ -121,9 +119,7 @@ function drawText(extendOptions){
         ctx.fillText(text,  x, y);
     }
 }
-/* 
-绘制填充矩形
-*/
+// 绘制填充矩形
 function drawRect(extendOptions){
     let option = {
         // ctx, x, y, w, h,
@@ -139,9 +135,7 @@ function drawRect(extendOptions){
     isStroke && _strokeGraph(ctx, style);
     isFill && _fillGraph(ctx, fillStyle);
 }
-/* 
-绘制扇形
-*/
+// 绘制扇形
 function drawSector(extendOptions){
     let option = {
         // ctx, x, y, r, deg1, deg2, 
@@ -159,9 +153,7 @@ function drawSector(extendOptions){
     isStroke && _strokeGraph(ctx, style);
     isFill && _fillGraph(ctx, fillStyle);
 }
-/* 
-绘制圆形
-*/
+// 绘制圆形
 function drawCircle(extendOptions){
     let option = {
         // ctx, x, y, 
@@ -178,12 +170,14 @@ function drawCircle(extendOptions){
     isStroke && _strokeGraph(ctx, style);
     isFill && _fillGraph(ctx, fillStyle);
 }
+// 设置图形叠加模式
 /* 
 设置图形叠加模式
 */
 function _setComposite(ctx, globalCompositeOperation){
     globalCompositeOperation && (ctx.globalCompositeOperation = globalCompositeOperation);
 }
+// 描边图形
 /* 
 描边图形
 */
@@ -191,6 +185,7 @@ function _strokeGraph(ctx, style){
     ctx.strokeStyle = style;
     ctx.stroke();
 }
+// 填充图形
 /* 
 填充图形
 */
@@ -199,6 +194,7 @@ function _fillGraph(ctx, style){
     ctx.fill();
 }
 /////////// 绘制全局效果 ////////////////////
+// 设置阴影样式
 /* 
 绘制阴影比较消耗浏览器性能
 x：水平偏移
@@ -214,15 +210,16 @@ function setShadowStyle(extendOptions){
         style:options.style,
         blur: 5
     }
-    let {ctx, x, y, style, blur, globalCompositeOperation} = Object.assign({},option,extendOptions);
+    let {ctx, x, y, style, blur} = Object.assign({},option,extendOptions);
     ctx.shadowstyle = style;
     ctx.shadowOffsetX = x;
     ctx.shadowOffsetY = y;
     ctx.shadowBlur = blur;
 }
 /////////// 绘制复杂业务图形 ////////////////
+// 绘制某个坐标的十字线
 /* 
-绘制某个坐标的十字线
+
 */
 function drawCrossLine(extendOptions){
     let option = {
@@ -253,8 +250,8 @@ function drawCrossLine(extendOptions){
         globalCompositeOperation
     });
 }
+// 绘制网格
 /* 
-绘制网格
 初始值等于0.5的原因：canvas处理像素边界的规则；
 */
 function drawGrid(extendOptions){
@@ -297,15 +294,18 @@ function drawGrid(extendOptions){
         y += stepY;
     }
 }
+// 绘制环形
 /* 
-绘制环形
-关键点：设置路径的方向，非0环绕原则填充
+关键点：设置路径的方向，非0环绕原则填充；
+x,y：圆环中心点
+r：内圆半径
+deltaR：外圆与内圆半径差值
 */
-function drawLoop({
-    ctx,x,y,r1,
-    deltaR,
-    style
-}){
+function drawLoop(extendOptions){
+    let option = {
+        // ctx, 
+    };
+    let {ctx, x, y, r1, deltaR, style} = Object.assign({},option,extendOptions);
     ctx.beginPath();
     ctx.arc(x, y, r1, 0, 2*Math.PI, false);
     ctx.moveTo(x,y); // 隐藏路径之间的横线

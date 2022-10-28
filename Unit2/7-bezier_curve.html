@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>贝塞尔曲线</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    .select-box{
+        position: absolute;
+        /* width: 100px;height: 100px;left: 0;right: 0; */display: none;
+        border: 1px solid red;
+    }
+    canvas{
+        /* border: 1px solid #000; */
+        margin: 10px;
+        -webkit-box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+        -moz-box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+        box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+    }
+</style>
+</head>
+<body>
+    <div class="canvas-box">
+        <div class="select-box"></div>
+        <canvas id="mycanvas"></canvas>
+        <canvas id="mycanvas2"></canvas>
+    </div>
+    <script type="module">
+        import {drawCircle} from '../canvas.js'
+
+        const canvas = document.querySelector('#mycanvas');
+        const ctx = canvas.getContext('2d',{willReadFrequently: true});
+        let w = 650,
+            h = 300;
+        canvas.width = w;
+        canvas.height = h;
+
+        ctx.strokeStyle = '#3aa112';
+
+        ctx.shadowColor = 'rgba(50,50,50,1.0)';
+        ctx.shadowOffsetX = 3;
+        ctx.shadowOffsetY = 3;
+        ctx.shadowBlur = 4;
+
+        ctx.lineWidth=2;
+        ctx.lineCap='round';
+
+        // 二次贝塞尔曲线，一个起点，一个控制点，一个终点
+        // 设置点的位置
+        const beginPoint = [120.5, 130],
+              controlPoint = [150.8, 130],
+              endPoint = [160.6, 150.5];
+        // 第二段和第三段的控制点
+        const controlPoint2 = [190, 250];
+        const controlPoint3 = [240, 100.5];
+
+        ctx.save();
+        ctx.shadowColor = undefined;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.shadowBlur = 0;
+        drawCircle({
+            ctx,
+            x: beginPoint[0],
+            y: beginPoint[1],
+            r: 4,
+            isStroke:false,
+            isFill:true,
+            fillStyle:'green'
+        });
+        drawCircle({
+            ctx,
+            x: controlPoint[0],
+            y: controlPoint[1],
+            r: 4,
+            isStroke:false,
+            isFill:true,
+            fillStyle:'red'
+        });
+        drawCircle({
+            ctx,
+            x: endPoint[0],
+            y: endPoint[1],
+            r: 4,
+            isStroke:false,
+            isFill:true,
+            fillStyle:'black'
+        });
+        drawCircle({
+            ctx,
+            x: controlPoint2[0],
+            y: controlPoint2[1],
+            r: 4,
+            isStroke:false,
+            isFill:true,
+            fillStyle:'red'
+        });
+        drawCircle({
+            ctx,
+            x: controlPoint3[0],
+            y: controlPoint3[1],
+            r: 4,
+            isStroke:false,
+            isFill:true,
+            fillStyle:'red'
+        });
+        ctx.restore();
+
+        drawQuadraticCurve();
+        // 二次贝塞尔曲线
+        function drawQuadraticCurve(){
+            ctx.beginPath();
+            ctx.moveTo(beginPoint[0], beginPoint[1]);
+            ctx.quadraticCurveTo(controlPoint[0], controlPoint[1], endPoint[0], endPoint[1]);
+            ctx.quadraticCurveTo(controlPoint2[0], controlPoint2[1],210.5,160.5);
+            ctx.quadraticCurveTo(controlPoint3[0], controlPoint3[1],290,70.5);
+            ctx.stroke();
+        }
+
+
+        const canvas2 = document.querySelector('#mycanvas2');
+        const ctx2 = canvas2.getContext('2d',{willReadFrequently: true});
+        let w2 = 650,
+            h2 = 300;
+        canvas2.width = w2;
+        canvas2.height = h2;
+
+        // 三次次贝塞尔曲线，一个起点，一个控制点，一个终点
+        // 设置点的位置
+        const beginPointB = [130, 70],
+              controlPointB1 = [130, 250],
+              controlPointB2 = [450, 70],
+              endPointB = [430, 270];
+
+        ctx2.save();
+        ctx2.shadowColor = undefined;
+        ctx2.shadowOffsetX = 0;
+        ctx2.shadowOffsetY = 0;
+        ctx2.shadowBlur = 0;
+        drawCircle({
+            ctx:ctx2,
+            x: beginPointB[0],
+            y: beginPointB[1],
+            r: 4,
+            isStroke:false,
+            isFill:true,
+            fillStyle:'green'
+        });
+        drawCircle({
+            ctx:ctx2,
+            x: controlPointB1[0],
+            y: controlPointB1[1],
+            r: 4,
+            isStroke:false,
+            isFill:true,
+            fillStyle:'red'
+        });
+        drawCircle({
+            ctx:ctx2,
+            x: controlPointB2[0],
+            y: controlPointB2[1],
+            r: 4,
+            isStroke:false,
+            isFill:true,
+            fillStyle:'red'
+        });
+        drawCircle({
+            ctx:ctx2,
+            x: endPointB[0],
+            y: endPointB[1],
+            r: 4,
+            isStroke:false,
+            isFill:true,
+            fillStyle:'black'
+        });
+        ctx2.restore();
+        drawBezierCurve();
+
+        // 三次贝塞尔曲线
+        function drawBezierCurve(){
+            ctx2.beginPath();
+            ctx2.moveTo(beginPointB[0], beginPointB[1]);
+            ctx2.bezierCurveTo(controlPointB1[0], controlPointB1[1], controlPointB2[0], controlPointB2[1], endPointB[0], endPointB[1]);
+            ctx2.stroke();
+        }
+
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>
