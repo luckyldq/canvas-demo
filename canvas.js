@@ -321,8 +321,8 @@ function _getPolygonPoints(ctx, x, y, r, lineNums){
     for(let i=0; i<lineNums; i++){
         let curAngle = i * perAngle;
         points.push([
-            r * Math.cos(curAngle) + x,
-            r * Math.sin(curAngle) + y
+            x + r * Math.sin(curAngle),
+            y - r * Math.cos(curAngle)
         ]);
     }
     return points;
@@ -342,6 +342,7 @@ function drawPolygon(extendOptions){
     };
     let {ctx, x, y, r, lines, isStroke, isFill, style, fillStyle} = Object.assign({},option,extendOptions);
     let points = _getPolygonPoints(ctx, x, y, r, lines);
+    ctx.beginPath();
     // lineTo和moveTo用反了，导致渲染没效果，T_T
     for(let i=0; i<points.length; i++){
         let point = points[i];

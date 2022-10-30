@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>拖拽多边形</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    canvas{
+        /* border: 1px solid #000; */
+        margin: 10px;
+        -webkit-box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+        -moz-box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+        box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+    }
+</style>
+</head>
+<body>
+    <select name="" id="lineNum">
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+    </select>
+    <div class="canvas-box">
+        <canvas id="mycanvas"></canvas>
+    </div>
+    <script type="module">
+        import {drawCrossLine, drawPolygon} from '../canvas.js'
+
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d',{willReadFrequently: true});
+        let w = 650,
+            h = 450;
+        canvas.width = w;
+        canvas.height = h;
+        let canvasData;
+
+        
+        // 生成多边形顶点 
+        /* 
+        x,y：多边形外接圆圆心
+        r：多边形外接圆半径
+        */
+        let lines = document.querySelector('#lineNum').value;
+        
+        // 鼠标按下的点
+        let mouseDownPoint = {
+            x:0,
+            y:0
+        }, r = 0, isDrawing = false;
+
+        // drawPolygon({ctx, x, y, r, lines});
+        canvas.addEventListener('mousedown',mouseDown);
+        canvas.addEventListener('mousemove',mouseMove);
+        canvas.addEventListener('mouseup',mouseUp);
+        function mouseDown(e){
+            canvasData = ctx.getImageData(0, 0, w, h);
+            mouseDownPoint = {
+                x: e.offsetX,
+                y: e.offsetY
+            }
+            r = 0;
+            lines = document.querySelector('#lineNum').value;
+            isDrawing = true;
+            drawCrossLine({
+                ctx,
+                x: mouseDownPoint.x,
+                y: mouseDownPoint.y,
+                style: 'blue'
+            });
+        }
+        function mouseMove(e){
+            if(!isDrawing){ return false; }
+            ctx.clearRect(0, 0, w, h);
+            ctx.putImageData(canvasData, 0, 0);
+            drawCrossLine({
+                ctx,
+                x: mouseDownPoint.x,
+                y: mouseDownPoint.y,
+                style: 'blue'
+            });
+            r = computeR(e.offsetX, e.offsetY);
+            // console.log(r);
+            // debugger
+            drawPolygon({
+                ctx, 
+                x: mouseDownPoint.x, 
+                y: mouseDownPoint.y, 
+                r, 
+                lines
+            });
+        }
+        function mouseUp(e){
+            isDrawing = false;
+            ctx.clearRect(0, 0, w, h);
+            ctx.putImageData(canvasData, 0, 0);
+            drawPolygon({
+                ctx, 
+                x: mouseDownPoint.x, 
+                y: mouseDownPoint.y, 
+                r, 
+                lines
+            });
+        }
+        function computeR(x, y){
+            return Math.sqrt(Math.pow((x-mouseDownPoint.x),2) + Math.pow((y-mouseDownPoint.y),2));
+        }
+
+
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>

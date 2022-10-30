@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>与图形的交互：-- 拖拽</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    canvas{
+        /* border: 1px solid #000; */
+        margin: 10px;
+        -webkit-box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+        -moz-box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+        box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+    }
+</style>
+</head>
+<body>
+    <select name="" id="lineNum">
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+    </select>
+    <div class="canvas-box">
+        <canvas id="mycanvas"></canvas>
+    </div>
+    <script type="module">
+        import {drawCrossLine, drawPolygon} from '../canvas.js'
+
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d',{willReadFrequently: true});
+        let w = 650,
+            h = 450;
+        canvas.width = w;
+        canvas.height = h;
+        let canvasData;
+
+        /***********多边形对象化************/
+        function Point(x, y){
+            this.x = x;
+            this.y = y;
+        }
+        /* 
+        外接圆圆心半径：x, y, r
+        sideNums：共有几条边
+        */
+        function Polygon(x, y, r, sideNums, strokeStyle, fillStyle, filled){
+            this.x = x;
+            this.y = y;
+            this.r = r;
+            this.sideNums = sideNums;
+            this.strokeStyle = strokeStyle;
+            this.fillStyle = fillStyle;
+            this.filled = filled;
+            this.isDrag = false; // 是否再拖拽中
+            this.path2D;
+        }
+        Polygon.prototype = {
+            getPoints:function(){
+                let points = [];
+                // 每个角度
+                const perAngle = 2 * Math.PI / this.sideNums;
+                for(let i=0; i< this.sideNums; i++){
+                    let curAngle = i * perAngle;
+                    points.push([
+                        this.x + this.r * Math.sin(curAngle),
+                        this.y - this.r * Math.cos(curAngle)
+                    ]);
+                }
+                return points;
+            },
+            createPath:function(ctx){
+                let points = this.getPoints(ctx, this.x, this.y, this.r, this.sideNums);
+                // lineTo和moveTo用反了，导致渲染没效果，T_T
+                this.path2D = new Path2D();
+                for(let i=0; i<points.length; i++){
+                    let point = points[i];
+                    if(i == 0){
+                        this.path2D.moveTo(point[0], point[1]);
+                    }else{
+                        this.path2D.lineTo(point[0], point[1]);
+                    }
+                }
+                this.path2D.closePath();
+            },
+            stroke:function(ctx){
+                ctx.save();
+                !this.path2D && this.createPath(ctx);
+                ctx.strokeStyle = this.strokeStyle;
+                ctx.stroke(this.path2D);
+                ctx.restore();
+            },
+            fill:function(ctx){
+                ctx.save();
+                !this.path2D && this.createPath(ctx);
+                ctx.fillStyle = this.fillStyle;
+                ctx.fill(this.path2D);
+                ctx.restore();
+                this.filled = true;
+            },
+            move:function(x, y){
+                this.x = x;
+                this.y = y;
+            }
+        }
+        ////////////保存canvas中的图形对象////////////////
+        let polygonArr = [];
+        ///////////////////////////////////////
+        /* 实例化一个图形 */
+        let points = new Point(100, 200);
+        let polygon0 = new Polygon(points.x, points.y, 50, 6, 'red');
+        polygon0.createPath(ctx);
+        polygon0.stroke(ctx);
+        polygonArr.push(polygon0);
+        /* 拖拽图形：
+        方案1：保存canvas内容，清空canvas，创建新路径绘制，当canvas有其他内容时，此方案会出现问题，还没找到解决方案；
+        方案2：清空canvas，只绘制除了当前路径对象外的其他路径对象，再绘制该路径对象变换后的样子； 
+        */
+        canvas.addEventListener('mousedown',mouseDown);
+        canvas.addEventListener('mousemove',mouseMove);
+        canvas.addEventListener('mouseup',mouseUp);
+        let mouseDownPoint = {x:0, y:0};
+        function mouseDown(e){
+            this.isDrag = ctx.isPointInPath(polygon0.path2D, e.offsetX, e.offsetY);
+            // console.log(this.isDrag)
+            mouseDownPoint = {
+                x: e.offsetX,
+                y: e.offsetY
+            }
+        }
+        function mouseMove(e){
+            if(!this.isDrag){ return false; }
+            ctx.clearRect(0, 0, w, h);
+            // 恢复其他图形
+            restoreOther();
+            polygon0.move(
+                polygon0.x + (e.offsetX - mouseDownPoint.x), 
+                polygon0.y + (e.offsetY - mouseDownPoint.y)
+            );
+            polygon0.createPath(ctx);
+            polygon0.stroke(ctx);
+            mouseDownPoint = {
+                x: e.offsetX,
+                y: e.offsetY
+            }
+        }
+        function mouseUp(e){
+            this.isDrag = false;
+            ctx.clearRect(0, 0, w, h);
+            restoreOther();
+            polygon0.createPath(ctx);
+            polygon0.stroke(ctx);
+        }
+        // 恢复其他图形
+        function restoreOther(){
+            polygonArr.forEach((polygon)=>{
+                if(polygon !== polygon0){
+                    polygon.stroke(ctx);  // 这里stroke会影响fill的透明度效果，用拾色器发现，是视觉差
+                    polygon.filled && polygon.fill(ctx);
+                }
+            });
+        }
+        /* 旋转图形 */
+        let points2 = new Point(300, 300);
+        let polygon2 = new Polygon(points2.x, points2.y, 50, 6, 'red','rgba(255, 0, 0, 0.6)');
+        polygon2.createPath(ctx);
+        polygon2.stroke(ctx);  // stroke会影响fill的透明度效果，用拾色器发现，是视觉差
+        polygon2.fill(ctx);
+        polygonArr.push(polygon2);
+
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>
