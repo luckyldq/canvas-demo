@@ -56,7 +56,7 @@ function strokeLine(extendOptions){
         // lineJoin: options.lineJoin
     }
     let {ctx, x0, y0, x1, y1, style, lineWidth, lineCap, lineJoin, globalCompositeOperation} = Object.assign({},option,extendOptions);
-    ctx.strokeStyle = style || style;
+    ctx.strokeStyle = style;
     ctx.lineWidth = lineWidth;
     lineCap && (ctx.lineCap = lineCap);
     lineJoin && (ctx.lineJoin = lineJoin);
@@ -224,7 +224,7 @@ function setShadowStyle(extendOptions){
     ctx.shadowOffsetY = y;
     ctx.shadowBlur = blur;
 }
-/////////// 绘制复杂业务图形 ////////////////
+/////////// 绘制复杂业务图形 ////////////////  
 // 绘制某个坐标的十字线
 /* 
 

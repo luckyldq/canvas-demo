@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>拖拽出一个三次贝塞尔曲线，并编辑它</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    .select-box{
+        position: absolute;
+        /* width: 100px;height: 100px;left: 0;right: 0; */display: none;
+        border: 1px solid red;
+    }
+    canvas{
+        /* border: 1px solid #000; */
+        margin: 10px;
+        -webkit-box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+        -moz-box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+        box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+    }
+</style>
+</head>
+<body>
+    <div class="canvas-box">
+        <div class="select-box"></div>
+        <canvas id="mycanvas"></canvas>
+    </div>
+    <script type="module">
+        import {drawCrossLine} from '../canvas.js'
+
+        const canvas = document.querySelector('#mycanvas');
+        const ctx = canvas.getContext('2d',{willReadFrequently: true});
+        let w = 650,
+            h = 400;
+        canvas.width = w;
+        canvas.height = h;
+        let canvsaData;
+
+        ctx.lineCap='round';
+
+        // 三次贝塞尔曲线，一个起点，两个控制点，一个终点
+        let mousedownPoint = {
+            fillStyle:'rgba(0, 255, 0, 0.5)'
+        }, controlPoint = {
+            fillStyle:'rgba(255, 255, 0, 0.5)'
+        }, controlPoint2 = {
+            fillStyle:'rgba(255, 255, 0, 0.5)'
+        }, endPoint = {
+            fillStyle:'rgba(0, 255, 0, 0.5)'
+        };
+        let polygonArr = [ // 存储需要操作的路径
+            mousedownPoint,  // 起点
+            controlPoint,  // 控制点
+            controlPoint2,
+            endPoint,  // 终点
+        ];
+        let isDrag = false;
+
+        let curPolygon, detal; // 当前操作的路径， 鼠标down下的位置与图形中心的的距离
+
+        canvas.addEventListener('mousedown', mouseDown);
+        canvas.addEventListener('mousemove', mouseMove);
+        canvas.addEventListener('mouseup', mouseUp);
+        function mouseDown(e){
+            curPolygon = polygonArr.find((polygon)=>{
+                return polygon.path && ctx.isPointInPath(polygon.path, e.offsetX, e.offsetY);
+            });
+            // 移动控制点
+            if(curPolygon){
+                detal = Math.sqrt(Math.pow((curPolygon.x - e.offsetX),2) + Math.pow((curPolygon.y - e.offsetY),2));
+                return false;
+            }
+            // 拖拽
+            isDrag = true;
+            mousedownPoint = polygonArr[0];
+            mousedownPoint.x = e.offsetX;
+            mousedownPoint.y = e.offsetY;
+            // 绘制起始点
+            drawCircle(mousedownPoint);
+        }
+        function mouseMove(e){
+            // 移动控制点
+            if(curPolygon){
+                ctx.clearRect(0, 0, w, h);
+                // 恢复其他点
+                restoreOtherCircle(curPolygon);
+                // 移动当前操作的点
+                curPolygon.x = e.offsetX;
+                curPolygon.y = e.offsetY;
+                drawCircle(curPolygon);
+                // 绘制贝塞尔曲线
+                drawBezierCurve();
+                return false;
+            }
+            if(!isDrag){ return false; }
+            ctx.clearRect(0, 0, w, h);
+            //  拖动时， 计算坐标点
+            endPoint.x = e.offsetX;
+            endPoint.y = e.offsetY;
+            
+            controlPoint.x = endPoint.x;
+            controlPoint.y = mousedownPoint.y;
+
+            controlPoint2.x = mousedownPoint.x;
+            controlPoint2.y = endPoint.y;
+            
+            drawCrossLine({
+                ctx,
+                x: e.offsetX,
+                y: e.offsetY,
+                style:'lightblue'
+            })
+            // 绘制点
+            polygonArr.forEach((point)=>{
+                drawCircle(point);
+            });
+            // 绘制贝塞尔曲线
+            drawBezierCurve();
+        }
+        function mouseUp(e){
+            // 如果是移动控制点
+            if(curPolygon){
+                ctx.clearRect(0, 0, w, h);
+                // 恢复其他点
+                restoreOtherCircle(curPolygon);
+                // 移动当前操作的点
+                curPolygon.x = e.offsetX;
+                curPolygon.y = e.offsetY;
+                drawCircle(curPolygon);
+                // 绘制贝塞尔曲线
+                drawBezierCurve();
+                curPolygon = null;
+                return false;
+            }
+            // 如果是拖拽
+            isDrag = false;
+            ctx.clearRect(0, 0, w, h);
+            // 绘制点
+            polygonArr.forEach((point)=>{
+                drawCircle(point);
+            });
+            // 绘制贝塞尔曲线
+            drawBezierCurve();
+        }
+        // 画圆
+        function drawCircle(point){
+            ctx.save();
+            let newPath = new Path2D();
+            newPath.arc(point.x, point.y, 4, 0, Math.PI *2, false);
+            newPath.closePath();
+            ctx.strokeStyle = 'black';
+            ctx.fillStyle = point.fillStyle;
+            ctx.stroke(newPath);
+            ctx.fill(newPath);
+            ctx.restore();
+            point.path = newPath;
+        }
+        // 恢复其他图形
+        function restoreOtherCircle(target){
+            polygonArr.forEach((polygon)=>{
+                if(polygon.path !== target.path){
+                    drawCircle(polygon);
+                }
+            });
+        }
+        // 绘制贝塞尔曲线
+        function drawBezierCurve(){
+            ctx.beginPath();
+            ctx.moveTo(mousedownPoint.x, mousedownPoint.y);
+            ctx.bezierCurveTo(controlPoint.x, controlPoint.y, controlPoint2.x, controlPoint2.y, endPoint.x, endPoint.y);
+            ctx.stroke();
+        }
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>
