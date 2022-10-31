@@ -132,8 +132,8 @@ function drawRect(extendOptions){
     ctx.beginPath();
     ctx.rect(x, y, w, h);
     _setComposite(ctx, globalCompositeOperation);
-    isStroke && _strokeGraph(ctx, style);
-    isFill && _fillGraph(ctx, fillStyle);
+    isStroke && strokeGraph(ctx, style);
+    isFill && fillGraph(ctx, fillStyle);
 }
 // 绘制扇形
 function drawSector(extendOptions){
@@ -150,8 +150,8 @@ function drawSector(extendOptions){
     ctx.beginPath();
     ctx.arc(x, y, r, deg1, deg2, counterclockwise);
     _setComposite(ctx, globalCompositeOperation);
-    isStroke && _strokeGraph(ctx, style);
-    isFill && _fillGraph(ctx, fillStyle);
+    isStroke && strokeGraph(ctx, style);
+    isFill && fillGraph(ctx, fillStyle);
 }
 // 绘制圆形
 function drawCircle(extendOptions){
@@ -167,8 +167,8 @@ function drawCircle(extendOptions){
     ctx.beginPath();
     ctx.arc(x, y, r, 0, 2*Math.PI, false);
     _setComposite(ctx, globalCompositeOperation);
-    isStroke && _strokeGraph(ctx, style);
-    isFill && _fillGraph(ctx, fillStyle);
+    isStroke && strokeGraph(ctx, style);
+    isFill && fillGraph(ctx, fillStyle);
 }
 // 设置图形叠加模式
 /* 
@@ -181,17 +181,25 @@ function _setComposite(ctx, globalCompositeOperation){
 /* 
 描边图形
 */
-function _strokeGraph(ctx, style){
+function strokeGraph(ctx, style, path=undefined){
     ctx.strokeStyle = style;
-    ctx.stroke();
+    if(path){
+        ctx.stroke(path);
+    }else{
+        ctx.stroke();
+    }
 }
 // 填充图形
 /* 
 填充图形
 */
-function _fillGraph(ctx, style){
+function fillGraph(ctx, style, path=undefined){
     ctx.fillStyle = style;
-    ctx.fill();
+    if(path){
+        ctx.fill(path);
+    }else{
+        ctx.fill();
+    }
 }
 /////////// 绘制全局效果 ////////////////////
 // 设置阴影样式
@@ -313,7 +321,7 @@ function drawLoop(extendOptions){
     ctx.fillStyle = style;
     ctx.fill();
 }
-// 绘制正多边形
+// 计算正多边形各个顶点坐标
 function _getPolygonPoints(ctx, x, y, r, lineNums){
     let points = [];
     // 每个角度
@@ -327,6 +335,7 @@ function _getPolygonPoints(ctx, x, y, r, lineNums){
     }
     return points;
 }
+// 绘制正多边形
 /* 
 x,y,r：外接圆圆心和半径
 */
@@ -353,13 +362,15 @@ function drawPolygon(extendOptions){
         }
     }
     ctx.closePath();
-    isStroke && _strokeGraph(ctx, style);
-    isFill && _fillGraph(ctx, fillStyle);
+    isStroke && strokeGraph(ctx, style);
+    isFill && fillGraph(ctx, fillStyle);
 }
             
 export {
     windowToCanvas,
     setTheme,
+    strokeGraph,
+    fillGraph,
     strokeLine,
     strokeDashLine,
     drawText,

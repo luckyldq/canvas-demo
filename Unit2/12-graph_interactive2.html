@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>与图形的交互：-- 旋转</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    canvas{
+        /* border: 1px solid #000; */
+        margin: 10px;
+        -webkit-box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+        -moz-box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+        box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+    }
+</style>
+</head>
+<body>
+    <select name="" id="lineNum">
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+    </select>
+    <div class="canvas-box">
+        <canvas id="mycanvas"></canvas>
+    </div>
+    <script type="module">
+        import {drawCrossLine, drawPolygon, drawCircle, strokeLine, drawText,strokeGraph,fillGraph} from '../canvas.js'
+
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d',{willReadFrequently: true});
+        let w = 650,
+            h = 450;
+        canvas.width = w;
+        canvas.height = h;
+        let canvasData;
+
+        ////////////保存canvas中的图形对象////////////////
+        let polygonArr = [];
+        function savePolygon(polygon){
+            polygonArr.push(polygon);
+        }
+
+        /***********多边形对象化************/
+        function Point(x, y){
+            this.x = x;
+            this.y = y;
+        }
+        /* 
+        外接圆圆心半径：x, y, r
+        sideNums：共有几条边
+        startAngle：起始角度
+        */
+        function Polygon(x, y, r, sideNums, startAngle, strokeStyle, fillStyle, filled){
+            this.x = x;
+            this.y = y;
+            this.r = r;
+            this.sideNums = sideNums;
+            this.startAngle = startAngle;
+            this.strokeStyle = strokeStyle;
+            this.fillStyle = fillStyle;
+            this.filled = filled;
+            this.isDrag = false; // 是否再拖拽中
+            this.path2D;
+        }
+        Polygon.prototype = {
+            getPoints:function(){
+                let points = [];
+                // 每个角度
+                const perAngle = 2 * Math.PI / this.sideNums;
+                for(let i=0; i< this.sideNums; i++){
+                    let curAngle = i * perAngle + this.startAngle;
+                    points.push([
+                        this.x + this.r * Math.sin(curAngle),
+                        this.y - this.r * Math.cos(curAngle)
+                    ]);
+                }
+                return points;
+            },
+            createPath:function(ctx){
+                let points = this.getPoints(ctx, this.x, this.y, this.r, this.sideNums);
+                // lineTo和moveTo用反了，导致渲染没效果，T_T
+                this.path2D = new Path2D();
+                for(let i=0; i<points.length; i++){
+                    let point = points[i];
+                    if(i == 0){
+                        this.path2D.moveTo(point[0], point[1]);
+                    }else{
+                        this.path2D.lineTo(point[0], point[1]);
+                    }
+                }
+                this.path2D.closePath();
+            },
+            stroke:function(ctx){
+                ctx.save();
+                !this.path2D && this.createPath(ctx);
+                ctx.strokeStyle = this.strokeStyle;
+                ctx.stroke(this.path2D);
+                ctx.restore();
+            },
+            fill:function(ctx){
+                ctx.save();
+                !this.path2D && this.createPath(ctx);
+                ctx.fillStyle = this.fillStyle;
+                ctx.fill(this.path2D);
+                ctx.restore();
+                this.filled = true;
+            },
+            draw:function(ctx){
+                this.stroke(ctx);
+                this.fill(ctx);
+            },
+            move:function(x, y){
+                this.x = x;
+                this.y = y;
+            }
+        }
+        
+        ///////////////////////////////////////
+        /* 实例化一个图形 */
+        let points = new Point(100, 200);
+        let polygon0 = new Polygon(points.x, points.y, 50, 6, Math.PI/4, 'red');
+        polygon0.createPath(ctx);
+        polygon0.stroke(ctx);
+        savePolygon(polygon0);
+        /* 拖拽图形：
+        方案1：保存canvas内容，清空canvas，创建新路径绘制，当canvas有其他内容时，此方案会出现问题，还没找到解决方案；
+        方案2：清空canvas，只绘制除了当前路径对象外的其他路径对象，再绘制该路径对象变换后的样子； 
+        */
+        canvas.addEventListener('mousedown',mouseDown);
+        canvas.addEventListener('mousemove',mouseMove);
+        canvas.addEventListener('mouseup',mouseUp);
+        let mouseDownPoint = {x:0, y:0};
+        function mouseDown(e){
+            this.isDrag = ctx.isPointInPath(polygon0.path2D, e.offsetX, e.offsetY);
+            // console.log(this.isDrag)
+            mouseDownPoint = {
+                x: e.offsetX,
+                y: e.offsetY
+            }
+        }
+        function mouseMove(e){
+            if(!this.isDrag){ return false; }
+            ctx.clearRect(0, 0, w, h);
+            // 恢复其他图形
+            restoreOther(polygon0);
+            polygon0.move(
+                polygon0.x + (e.offsetX - mouseDownPoint.x), 
+                polygon0.y + (e.offsetY - mouseDownPoint.y)
+            );
+            polygon0.createPath(ctx);
+            polygon0.stroke(ctx);
+            mouseDownPoint = {
+                x: e.offsetX,
+                y: e.offsetY
+            }
+        }
+        function mouseUp(e){
+            this.isDrag = false;
+            ctx.clearRect(0, 0, w, h);
+            restoreOther(polygon0);
+            polygon0.createPath(ctx);
+            polygon0.stroke(ctx);
+        }
+        // 恢复其他图形  排除target
+        function restoreOther(target=null){
+            polygonArr.forEach((polygon)=>{
+                if(polygon !== target){
+                    polygon.stroke(ctx);  // 这里stroke会影响fill的透明度效果，用拾色器发现，是视觉差
+                    polygon.filled && polygon.fill(ctx);
+                }
+            });
+        }
+        
+        /* 旋转图形 */
+        let points2 = new Point(300, 300);
+        let polygon2 = new Polygon(points2.x, points2.y, 50, 3, 0, 'red','rgba(255, 0, 0, 0.6)');
+        polygon2.createPath(ctx);
+        // polygon2.stroke(ctx);  // stroke会影响fill的透明度效果，用拾色器发现，是视觉差
+        // polygon2.fill(ctx);
+        polygon2.draw(ctx);
+        savePolygon(polygon2);
+
+        polygon2.isRotate = false;
+
+        // polygon2副本
+        let polygon3 = new Polygon(polygon2.x, polygon2.y, polygon2.r, polygon2.sideNums, polygon2.startAngle, 'rgba(0,0,255,0.8)','rgba(0,0,255,0.4)');
+        polygon3.createPath(ctx);
+
+        canvas.addEventListener('mousedown',mouseDown1);
+        canvas.addEventListener('mousemove',mouseMove2);
+        canvas.addEventListener('mouseup',mouseUp3);
+        function mouseDown1(e){
+            polygon2.isRotate = polygon2.isRotate?false:ctx.isPointInPath(polygon2.path2D, e.offsetX, e.offsetY);
+            // 如果鼠标点击点在路径中，则绘制刻度盘和图形副本
+            if(polygon2.isRotate){
+                // 转动指针和polygon3
+                // 计算角度，
+                let angle = computeAngle(e, polygon2.x, polygon2.y);
+                drawDashBoard({
+                    x: polygon2.x,
+                    y: polygon2.y,
+                    r: polygon2.r+65,
+                    handAngle: angle
+                });
+                polygon3.draw(ctx);
+            }
+        }
+        function mouseMove2(e){
+            // 绘制
+            if(!polygon2.isRotate){ return false; }
+            ctx.clearRect(0, 0, w, h);
+            restoreOther();
+            // 转动指针和polygon3
+            // 计算角度，
+            let angle = computeAngle(e, polygon2.x, polygon2.y);
+            drawDashBoard({
+                x: polygon2.x,
+                y: polygon2.y,
+                r: polygon2.r+65,
+                handAngle: angle
+            });
+            polygon3.startAngle = angle;
+            polygon3.createPath(ctx);
+            polygon3.draw(ctx);
+        }
+        function mouseUp3(){
+            ctx.clearRect(0, 0, w, h);
+            if(polygon2.isRotate){
+                restoreOther(polygon3);
+                drawDashBoard({
+                    x: polygon2.x,
+                    y: polygon2.y,
+                    r: polygon2.r+65,
+                    handAngle: -Math.PI/4
+                });
+                polygon3.draw(ctx);
+            }else{
+                restoreOther(polygon2);
+                polygon2.startAngle = polygon3.startAngle;
+                polygon2.createPath(ctx);
+                polygon2.draw(ctx);
+            }
+        }
+        /* 绘制仪表盘 */
+        function drawDashBoard(CIRCLE_INFO){
+            ctx.save();
+            // 绘制圆盘
+            drawLoop({
+                ctx,
+                x: CIRCLE_INFO.x,
+                y: CIRCLE_INFO.y,
+                r: CIRCLE_INFO.r,
+                deltaR: 20
+            });
+            ctx.restore();
+
+            // 绘制圆盘内饰线
+            drawCircle({
+                ctx,
+                x: CIRCLE_INFO.x,
+                y: CIRCLE_INFO.y,
+                r: CIRCLE_INFO.r - 20 - 10,
+                style: 'rgba(0,0,0,0.1)'
+            });
+
+            // 绘制指针
+            ctx.save();
+            drawHand();
+            ctx.restore();
+
+            // 绘制刻度
+            drawTicks();
+
+            /* 
+            绘制环形
+            */
+            function drawLoop({
+                ctx,x,y,r,
+                deltaR,
+                style
+            }){
+                ctx.shadowColor='rgba(0,0,0,0.7)';
+                ctx.shadowOffsetX=3;
+                ctx.shadowOffsetY=3;
+                ctx.shadowBlur=6;
+                ctx.beginPath();
+                ctx.strokeStyle= 'rgba(100, 140, 230, 0.5)';
+                // 外圆
+                ctx.arc(x, y, r, 0, 2*Math.PI, true);
+                ctx.stroke();
+                // 内圆
+                ctx.strokeStyle='rgba(0,0,0,0.1)';
+                ctx.arc(x, y, r-deltaR, 0, 2*Math.PI, false);
+                ctx.stroke();
+
+                ctx.fillStyle='rgba(100,140,230,0.1)';
+                ctx.fill();
+                
+            }
+            /* 
+            绘制指针
+            */
+            function drawHand(){
+                drawCircle({
+                    ctx,
+                    x: CIRCLE_INFO.x,
+                    y: CIRCLE_INFO.y,
+                    r: 10,
+                    style: 'rgba(0, 0, 0, 0.5)',
+                    isFill: true,
+                    fillStyle: 'rgba(80, 190, 240, 0.6)'
+                });
+                // 确定线的末端位置
+                let angle = CIRCLE_INFO.handAngle;
+                let endX = CIRCLE_INFO.x + CIRCLE_INFO.r * Math.cos(angle);
+                let endY = CIRCLE_INFO.y + CIRCLE_INFO.r * Math.sin(angle);
+                
+                strokeLine({
+                    ctx,
+                    x0: CIRCLE_INFO.x,
+                    y0: CIRCLE_INFO.y,
+                    x1: endX,
+                    y1: endY,
+                    style: 'goldenrod'
+                });
+                drawCircle({
+                    ctx,
+                    x: endX,
+                    y: endY,
+                    r: 5,
+                    style: 'rgba(100, 140, 230, 0.9)',
+                    isFill: true,
+                    fillStyle: 'rgba(250, 250, 0, 0.3)'
+                });
+            }
+            /* 
+            绘制刻度  360度，128个刻度
+            */
+            function drawTicks(){
+                let baseR = CIRCLE_INFO.r - 20;
+                let ticksNum = 128;
+                let perAngle = 360 / ticksNum; // 每个刻度的角度
+                let perDeg = Math.PI*2 / ticksNum; // 每个刻度的弧度
+
+                for(let i=0;i<ticksNum;i++){
+                    let angle = i * perDeg;
+                    let delta = i%4 == 0?15: 5; 
+                    let needText = i%8 == 0?true:false;
+
+                    let x0 = CIRCLE_INFO.x + (baseR - delta )* Math.cos(angle);
+                    let y0 = CIRCLE_INFO.y + (baseR - delta )* Math.sin(angle);
+                    let x1 = CIRCLE_INFO.x + baseR * Math.cos(angle);
+                    let y1 = CIRCLE_INFO.y + baseR* Math.sin(angle);
+                    strokeLine({
+                        ctx,
+                        x0,
+                        y0,
+                        x1,
+                        y1,
+                        style:'rgba(100, 140, 230, 0.7)'
+                    });
+                    let textX = CIRCLE_INFO.x + (baseR - delta*2 )* Math.cos(angle);
+                    let textY = CIRCLE_INFO.y + (baseR - delta*2 )* Math.sin(angle);
+                    ctx.shadowColor='rgba(0,0,0,0.7)';
+                    needText && drawText({
+                        ctx,
+                        // text: i==0?0:Math.ceil((ticksNum-i)*perAngle),  // 数字逆时针变大
+                        text: Math.ceil(i*perAngle),  // 数字顺时针变大
+                        x: textX,
+                        y: textY,
+                        font: '12px Helvetica',
+                        isStroke: false,
+                        isFill: true,
+                        fillStyle: 'rgba(0, 0, 230, 0.9)'
+                    });
+                }
+            }
+        }
+        // 计算旋转角度  我考虑复杂了，简单的方法是用tanθ
+        // 使用tanθ，始终是相对于首次绘制的角度，而不是相对于上次旋转后的角度；
+        function computeAngle(e, x, y){
+            let angle;
+            if(e.offsetX == x){
+                if(e.offsetY > y){ // 在辅助坐标轴下方
+                    angle = Math.PI/2
+                }else{
+                    angle = 3*Math.PI/2;
+                }
+            }
+            else if(e.offsetX > x){
+                angle = Math.atan((e.offsetY - y)/(e.offsetX - x));
+            }else{
+                angle = Math.PI + Math.atan((e.offsetY - y)/(e.offsetX - x));  // 加Math.PI才正确，具体推算
+            }
+            return angle;
+        }
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>
