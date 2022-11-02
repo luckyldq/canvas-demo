@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>设置图像混合模式--globalCompositeOperation</title>
+<style>
+    body, html{
+        position: relative;padding:20px;margin: 0;overflow: hidden;
+    }
+    .select-box{
+        position: absolute;
+        /* width: 100px;height: 100px;left: 0;right: 0; */display: none;
+        border: 1px solid red;
+    }
+    canvas{
+        /* border: 1px solid #000; */
+        margin: 10px;
+        -webkit-box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+        -moz-box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+        box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+    }
+</style>
+</head>
+<body>
+    <select name="" id="">
+        <option value="source-over">source-over</option>
+        <option value="source-in">source-in</option>
+        <option value="source-out">source-out</option>
+        <option value="source-atop">source-atop</option>
+        <option value="destination-over">destination-over</option>
+        <option value="destination-in">destination-in</option>
+        <option value="destination-out">destination-out</option>
+        <option value="destination-atop">destination-atop</option>
+        <option value="lighter">lighter</option>
+        <option value="copy">copy</option>
+        <option value="xor">xor</option>
+        <option value="multiply">multiply</option>
+        <option value="screen">screen</option>
+        <option value="overlay">overlay</option>
+        <option value="darken">darken</option>
+        <option value="lighten">lighten</option>
+        <option value="color-dodge">color-dodge</option>
+        <option value="color-burn">color-burn</option>
+        <option value="hard-light">hard-light</option>
+        <option value="soft-light">soft-light</option>
+        <option value="difference">difference</option>
+        <option value="exclusion">exclusion</option>
+        <option value="hue">hue</option>
+        <option value="saturation">saturation</option>
+        <option value="color">color</option>
+        <option value="luminosity">luminosity</option>
+    </select>
+    <div class="canvas-box">
+        <canvas id="mycanvas"></canvas>
+    </div>
+    <script type="module">
+        import {drawCircle} from '../canvas.js'
+
+        const canvas = document.querySelector('#mycanvas');
+        const ctx = canvas.getContext('2d',{willReadFrequently: true});
+        let w = 650,
+            h = 400;
+        canvas.width = w;
+        canvas.height = h;
+
+        let canvasData;
+
+        let compositeEl = document.querySelector('select');
+        ctx.globalCompositeOperation = compositeEl.value;
+
+        let image = new Image();
+        image.src = '../images/countrypath.jpg';
+        image.onload = function(){
+            ctx.drawImage(image, 0, 0, image.width, image.height, 150, 100, 100, 100);
+            canvasData = ctx.getImageData(0, 0, w, h);
+            canvas.addEventListener('mousemove', mouseMove);
+        }
+
+        function mouseMove(e){
+            ctx.clearRect(0, 0, w, h);
+            ctx.putImageData(canvasData, 0, 0);
+            ctx.globalCompositeOperation = compositeEl.value;
+            drawCircleFn(e.offsetX, e.offsetY);
+        }
+
+        function drawCircleFn(x, y){
+            ctx.save();
+            ctx.translate(x, y);
+            drawCircle({
+                ctx,
+                x:0,
+                y:0,
+                r:50,
+                isStroke:false,
+                isFill:true,
+                fillStyle:'red'
+            });
+            ctx.restore();
+        }
+
+        
+
+        
+        
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>

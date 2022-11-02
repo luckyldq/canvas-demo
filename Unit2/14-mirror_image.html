@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>使用缩放实现图片的镜像</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    .select-box{
+        position: absolute;
+        /* width: 100px;height: 100px;left: 0;right: 0; */display: none;
+        border: 1px solid red;
+    }
+    canvas{
+        /* border: 1px solid #000; */
+        margin: 10px;
+        -webkit-box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+        -moz-box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+        box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+    }
+</style>
+</head>
+<body>
+    <div class="canvas-box">
+        <div class="select-box"></div>
+        <canvas id="mycanvas"></canvas>
+    </div>
+    <script type="module">
+        import {drawCrossLine} from '../canvas.js'
+
+        const canvas = document.querySelector('#mycanvas');
+        const ctx = canvas.getContext('2d',{willReadFrequently: true});
+        let w = 650,
+            h = 400;
+        canvas.width = w;
+        canvas.height = h;
+        let canvsaData;
+
+        ctx.lineCap='round';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = 2;
+
+        ctx.save();
+        drawCrossLine({
+            ctx, 
+            x: 300, 
+            y: 200,
+            style: 'lightblue'
+        });
+        ctx.restore();
+        
+        // 这里平移，是为了展示镜像效果
+        ctx.translate(300, 200);
+
+        drawTriangle();
+
+        ctx.save();
+        ctx.scale(-1, 1); // 水平镜像
+        drawTriangle('blue');
+        ctx.restore();
+
+        ctx.save();
+        ctx.scale(1, -1); // 垂直镜像
+        drawTriangle('red');
+        ctx.restore();
+
+        ctx.save();
+        ctx.scale(-1, -1); // 对称镜像
+        drawTriangle('green');
+        ctx.restore();
+
+        function drawTriangle(style='black'){
+            ctx.beginPath();
+            ctx.moveTo(10, 10);
+            ctx.lineTo(10, 100);
+            ctx.lineTo(100, 10);
+            ctx.closePath();
+            ctx.strokeStyle = style;
+            ctx.stroke();
+        }
+        
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>
