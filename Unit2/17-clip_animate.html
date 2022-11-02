@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>使用clip()实现动画效果</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    .select-box{
+        position: absolute;
+        /* width: 100px;height: 100px;left: 0;right: 0; */display: none;
+        border: 1px solid red;
+    }
+    canvas{
+        /* border: 1px solid #000; */
+        margin: 10px;
+        -webkit-box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+        -moz-box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+        box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+    }
+</style>
+</head>
+<body>
+    <div class="canvas-box">
+        <canvas id="mycanvas"></canvas>
+    </div>
+    <script type="module">
+        import {drawCrossLine, drawCircle, setShadowStyle, drawText} from '../canvas.js'
+
+        const canvas = document.querySelector('#mycanvas');
+        const ctx = canvas.getContext('2d',{willReadFrequently: true});
+        let w = 650,
+            h = 400;
+        canvas.width = w;
+        canvas.height = h;
+
+        let type; // 是画笔，还是橡皮擦
+        
+        canvas.addEventListener('mousedown', animate);
+
+        let loop;
+
+        drawTextFn();
+
+        function animate(){
+            let radius = w/2;
+            loop = window.setInterval(function(){
+
+                radius -= w/100;
+
+                fillCanvas('black');
+
+                if(radius > 0){
+                    ctx.save();
+                    drawAnimationFrame(radius);
+                    ctx.restore();
+                }
+                else{
+                    endAnimation(loop);
+                }
+
+            }, 16);
+        }
+        function drawAnimationFrame(radius){
+            setCippingRegion(radius);
+            fillCanvas('lightgray');
+            drawTextFn();
+        }
+        function setCippingRegion(radius){
+            ctx.beginPath();
+            ctx.arc(w/2, h/2, radius, 0, 2*Math.PI);
+            ctx.clip();
+        }
+        function fillCanvas(color){
+            ctx.fillStyle = color;
+            ctx.fillRect(0, 0, w, h);
+        }
+        function drawTextFn(){
+            ctx.save();
+            setShadowStyle({
+                ctx,
+                style: 'rgba(100, 100, 150, 0.8)',
+                blur: 10
+            });
+            drawText({
+                ctx,
+                text: 'HTML5',
+                x: w/2,
+                y: h/2,
+                font:'128pt Comic-sans',
+                style:'yellow',
+                isFill: true,
+                fillStyle:'cornflowerblue'
+            });
+            ctx.restore();
+        }
+        function endAnimation(){
+            clearInterval(loop);
+            setTimeout(() => {
+                ctx.clearRect(0, 0, w, h);
+                drawTextFn();
+            }, 1000);
+        }
+
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>

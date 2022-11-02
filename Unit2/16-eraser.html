@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>使用clip()实现橡皮擦</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    .select-box{
+        position: absolute;
+        /* width: 100px;height: 100px;left: 0;right: 0; */display: none;
+        border: 1px solid red;
+    }
+    canvas{
+        /* border: 1px solid #000; */
+        margin: 10px;
+        -webkit-box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+        -moz-box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+        box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+    }
+</style>
+</head>
+<body>
+    <div>
+        <input type="radio" name="type" value="draw" checked>draw</input>
+        <input type="radio" name="type" value="erease">erease</input>
+    </div>
+    <div class="canvas-box">
+        <canvas id="mycanvas"></canvas>
+    </div>
+    <script type="module">
+        import {drawCrossLine, drawCircle} from '../canvas.js'
+
+        const canvas = document.querySelector('#mycanvas');
+        const ctx = canvas.getContext('2d',{willReadFrequently: true});
+        let w = 650,
+            h = 400;
+        canvas.width = w;
+        canvas.height = h;
+
+        let type; // 是画笔，还是橡皮擦
+        
+        canvas.addEventListener('mousedown', mouseDown);
+        canvas.addEventListener('mousemove', mouseMove);
+        canvas.addEventListener('mouseup', mouseUp);
+
+        let mousedownPoint, r;
+        let drag = false; // 是否在拖拽中
+        let canvasData;
+
+        // 监听单选按钮值的变化
+        // let radios = document.querySelectorAll('input[name=type]')
+        // radios.forEach((el)=>{
+        //     el.addEventListener('change',function(e){
+        //         // console.log(el.value)
+        //         if(el.value == 'erease'){ // 切换到橡皮擦时记录当前canvas的数据 或者 在按下鼠标时记录
+        //             canvasData = ctx.getImageData(0, 0, w, h);
+        //         }
+        //     });
+        // });
+
+        /* 
+        模拟橡皮擦擦子思路：
+            1.1、按下鼠标，擦除内容，记录擦除后的图像1，显示橡皮檫子；
+            1.2、移动鼠标，清空canvas，恢复图像1，擦除内容，显示橡皮檫；
+            
+            2、
+        */
+        function mouseDown(e){
+            type = document.querySelector('input[name=type]:checked').value;  // 
+            drag = true;
+            if(type == 'draw'){
+                canvasData = ctx.getImageData(0,0,w,h);
+                mousedownPoint = {
+                    x: e.offsetX,
+                    y: e.offsetY
+                }
+                drawCrossLine({
+                    ctx,
+                    x: mousedownPoint.x,
+                    y: mousedownPoint.y,
+                    style: 'lightblue'
+                });
+            }else if(type == 'erease'){
+                erease(e.offsetX, e.offsetY);  // 先擦除
+                canvasData = ctx.getImageData(0,0,w,h);  // 记录擦除后的图像数据
+                ereaseLook(e.offsetX, e.offsetY);  // 再绘制橡皮擦最后的位置
+
+            }
+        }
+
+        function mouseMove(e){
+            type = document.querySelector('input[name=type]:checked').value;  //
+            if(type == 'draw' && drag){
+                ctx.clearRect(0 ,0 ,w, h);
+                ctx.putImageData(canvasData, 0, 0);
+                drawCrossLine({
+                    ctx,
+                    x: e.offsetX,
+                    y: e.offsetY,
+                    style: 'lightblue'
+                });
+                drawCircle({
+                    ctx,
+                    x: mousedownPoint.x,
+                    y: mousedownPoint.y,
+                    r: Math.sqrt(Math.pow((e.offsetX - mousedownPoint.x),2)+Math.pow((e.offsetY - mousedownPoint.y),2)),
+                    isFill: true,
+                    fillStyle: 'red'
+                })
+            }
+            console.log(type)
+            if(type == 'erease' && drag){
+                ctx.putImageData(canvasData, 0, 0);
+                erease(e.offsetX, e.offsetY);  // 先擦除
+                canvasData = ctx.getImageData(0,0,w,h);  // // 记录擦除后的图像数据
+                ereaseLook(e.offsetX, e.offsetY);  // 再绘制橡皮擦最后的位置
+            }
+        }
+
+        function mouseUp(e){
+            drag = false;
+            if(type == 'draw'){
+                ctx.clearRect(0 ,0 ,w, h);
+                ctx.putImageData(canvasData, 0, 0);
+                drawCircle({
+                    ctx,
+                    x: mousedownPoint.x,
+                    y: mousedownPoint.y,
+                    r: Math.sqrt(Math.pow((e.offsetX - mousedownPoint.x),2)+Math.pow((e.offsetY - mousedownPoint.y),2)),
+                    isFill: true,
+                    fillStyle: 'red'
+                })
+            }
+            if(type == 'erease'){
+                ctx.clearRect(0 ,0 ,w, h);
+                ctx.putImageData(canvasData, 0, 0);
+            }
+        }
+
+        // 绘制橡皮擦
+        function ereaseLook(x, y){
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(x, y, 5, 0, 2*Math.PI, false); // 绘制路径
+            ctx.stroke();
+            ctx.restore();
+        }
+        // 擦除效果
+        function erease(x, y){
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(x, y, 5, 0, 2*Math.PI, false); // 绘制路径
+            ctx.clip(); // 将当前路径设置为剪切区域
+            ctx.clearRect(0, 0, w, h);  // 擦除动作，此时，擦除动作只会影响剪切区域中的内容
+            ctx.restore();
+        }
+        
+        
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>
