@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>坐标轴绘制，带有坐标点</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    .select-box{
+        position: absolute;
+        /* width: 100px;height: 100px;left: 0;right: 0; */display: none;
+        border: 1px solid red;
+    }
+    canvas{
+        border: 1px solid #000;margin: 10px;
+    }
+</style>
+</head>
+<body>
+    <div class="canvas-box">
+        <div class="select-box"></div>
+        <canvas id="mycanvas"></canvas>
+    </div>
+    <script type="module">
+        import {strokeLine} from '../canvas.js'
+
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+        let w = 400,
+            h = 400;
+        canvas.width = w;
+        canvas.height = h;
+
+        // 设置坐标的位置
+        // x轴外边距
+        let AXIS_MARGIN_X = 40.5,  // 为了绘制1像素宽的线段，像素边界问题
+            AXIS_MARGIN_Y = 40.5,
+            origin = {
+                x: AXIS_MARGIN_X,
+                y: h - AXIS_MARGIN_Y
+            },
+            x_right = w - AXIS_MARGIN_X,
+            y_top = AXIS_MARGIN_Y;
+        
+        let tick_space = 5;
+        let tickXnum = Math.floor((x_right - origin.x) / tick_space),
+            tickYnum = Math.floor((origin.y - y_top) / tick_space);
+        let lable_sapce = 4;
+
+        drawAxis();
+        drawTicks();
+        drawTickText();
+
+        function drawAxis(){
+            ctx.beginPath();
+            ctx.moveTo(origin.x, y_top);
+            ctx.lineTo(origin.x, origin.y);
+            ctx.lineTo(x_right, origin.y);
+            ctx.stroke();
+        }
+        function drawTicks(){
+            for(let i=1;i<=tickXnum; i++){
+                let lineLength = i%5==0?8:4;
+                let point1 = {
+                    x: origin.x + tick_space*i,
+                    y: origin.y
+                }
+                let point2 = {
+                    x: origin.x + tick_space*i,
+                    y: origin.y - lineLength
+                }
+                ctx.beginPath();
+                ctx.moveTo(point1.x, point1.y);
+                ctx.lineTo(point2.x, point2.y);
+                ctx.strokeStyle = 'blue';
+                ctx.lineWidth = 0.5;
+                ctx.stroke();
+            }
+            for(let i=1;i<=tickYnum; i++){
+                let lineLength = i%5==0?8:4;
+                let point1 = {
+                    x: origin.x,
+                    y: origin.y - tick_space*i
+                }
+                let point2 = {
+                    x: origin.x + lineLength,
+                    y: origin.y - tick_space*i
+                }
+                ctx.beginPath();
+                ctx.moveTo(point1.x, point1.y);
+                ctx.lineTo(point2.x, point2.y);
+                ctx.strokeStyle = 'blue';
+                ctx.lineWidth = 0.5;
+                ctx.stroke();
+            }
+        }
+        
+        function drawTickText(){
+            for(let i=1;i<=tickXnum; i++){
+                if(i%5 == 0){
+                    ctx.beginPath();
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'top';
+                    ctx.fillText(i, origin.x + tick_space*i, origin.y + lable_sapce);
+                }
+            }
+            for(let i=1;i<=tickYnum; i++){
+                if(i%5 == 0){
+                    ctx.beginPath();
+                    ctx.textAlign = 'right';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(i, origin.x - lable_sapce, origin.y - tick_space*i);
+                }
+            }
+        }
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>

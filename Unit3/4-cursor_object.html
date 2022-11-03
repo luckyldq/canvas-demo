@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>模拟光标闪烁--封装对象</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    .select-box{
+        position: absolute;
+        /* width: 100px;height: 100px;left: 0;right: 0; */display: none;
+        border: 1px solid red;
+    }
+    canvas{
+        border: 1px solid #000;margin: 10px;
+    }
+</style>
+</head>
+<body>
+    <div class="canvas-box">
+        <div class="select-box"></div>
+        <canvas id="mycanvas"></canvas>
+    </div>
+    <script type="module">
+        import {strokeLine, drawText} from '../canvas.js'
+
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+        let w = 400,
+            h = 400;
+        canvas.width = w;
+        canvas.height = h;
+        
+        let imageData;
+        
+        imageData = ctx.getImageData(0,0,w,h);
+        let cursor = new TextCursor();
+
+        canvas.addEventListener('mousedown', mouseDown);
+        function mouseDown(e){
+            moveCursor(cursor, e);
+        }
+
+        // 矩形填充，而不是绘制线条，方便clip区域，擦除
+        function TextCursor(width, fillStyle){
+            this.fillStyle = fillStyle || 'rgba(0, 0, 0, 0.5)';
+            this.width = width || 2;
+            this.left = 0;
+            this.top = 0;
+            this.blinkInterval = false;
+            this.blinkOffTimer = false;
+            this.blink_on = 500;
+            this.blink_off =500;
+        }
+        TextCursor.prototype.getHeight = function(ctx){
+            let w = ctx.measureText('W').width;
+            return w + w/6;
+        }
+        TextCursor.prototype.createPath = function(ctx){
+            ctx.beginPath();
+            ctx.rect(this.left, this.top, this.width, this.getHeight(ctx));
+        }
+        TextCursor.prototype.draw = function(ctx, left, bottom){
+            ctx.save();
+            this.left = left;
+            this.top = bottom - this.getHeight(ctx);
+            this.createPath(ctx);
+            ctx.fillStyle = this.fillStyle;
+            ctx.fill();
+            ctx.restore();
+        }
+        TextCursor.prototype.erase = function(ctx, imageData){
+            ctx.putImageData(imageData, 0, 0, this.left, this.top, this.width, this.getHeight(ctx)+1);
+        }
+        TextCursor.prototype.blinkFn = function(ctx, left, bottom, imageData){
+            this.draw(ctx, left, bottom);
+            this.blinkOffTimer = setTimeout(()=>{
+                this.erase(ctx, imageData);
+            },this.blink_on);
+        }
+        TextCursor.prototype.blinkCursor = function(ctx, left, bottom, imageData){
+            this.blinkInterval = setInterval(() => {
+                this.blinkFn(ctx, left, bottom, imageData);
+            }, this.blink_on + this.blink_off);
+        }
+        function moveCursor(cursor, loc){
+            // 移除之前的cursor数据
+            cursor.erase(ctx, imageData);
+            if(cursor.blinkInterval){
+                clearInterval(cursor.blinkInterval);
+                cursor.blinkInterval = null;
+            }
+            if(cursor.blinkOffTimer){
+                clearTimeout(cursor.blinkOffTimer);
+                cursor.blinkOffTimer = null;
+            }
+            // 更新cursor
+            cursor.blinkFn(ctx, loc.offsetX, loc.offsetY, imageData);
+            cursor.blinkCursor(ctx, loc.offsetX, loc.offsetY, imageData);
+        }
+        
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>

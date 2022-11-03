@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>环形文字</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    .select-box{
+        position: absolute;
+        /* width: 100px;height: 100px;left: 0;right: 0; */display: none;
+        border: 1px solid red;
+    }
+    canvas{
+        border: 1px solid #000;margin: 10px;
+    }
+</style>
+</head>
+<body>
+    <div class="canvas-box">
+        <div class="select-box"></div>
+        <canvas id="mycanvas"></canvas>
+    </div>
+    <script type="module">
+        import {drawCircle, drawText} from '../canvas.js'
+
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+        let w = 400,
+            h = 400;
+        canvas.width = w;
+        canvas.height = h;
+
+        let circle_center = {
+                x: 200,
+                y: 200
+            },
+            r = 160,
+            textR = r - 20;
+
+        drawCircle({
+            ctx,
+            x: circle_center.x, 
+            y: circle_center.y,
+            r,
+            style:'lightgray'
+        });
+
+        let textArr = '今天是个好日子！'.split('');
+        
+
+        let direction = 1; // 1-顺时针  -1-逆时针
+        let startRadian = 0; // Math.PI/180;  // 开始弧度
+
+        animation();
+        function animation(){
+            setInterval(() => {
+                if(textR <= 20){
+                    direction = -1;
+                }
+                if(textR >= 140){
+                    direction = 1;
+                }
+                ctx.clearRect(0,0,w,h);
+                drawCircle({
+                    ctx,
+                    x: circle_center.x, 
+                    y: circle_center.y,
+                    r,
+                    style:'lightgray'
+                });
+                drawWords(textArr);
+                startRadian = startRadian + (Math.PI/360) * direction;
+                textR  = textR + (-1)*direction;
+            }, 16);
+        }
+
+        function drawWords(textArr){
+            let radian_space =  2*Math.PI/textArr.length; // Math.PI / 6; // 30度
+            for(let i = 0; i<textArr.length; i++){
+                let word = textArr[i];
+                let rotateRadian = radian_space * i + startRadian;
+                let word_origin = {
+                    x: circle_center.x + textR*Math.cos(rotateRadian),
+                    y: circle_center.y + textR*Math.sin(rotateRadian),
+                }
+                drawCircle({
+                    ctx,
+                    x: word_origin.x,
+                    y: word_origin.y,
+                    style:'lightblue'
+                });
+                ctx.save();
+                ctx.translate(word_origin.x, word_origin.y);
+                ctx.rotate(rotateRadian + Math.PI/2);
+                drawText({
+                    ctx,
+                    text:word,
+                    font:'30px 宋体',
+                    isFill:true,
+                    x: 0,
+                    y: 0
+                });
+                ctx.restore();
+            }
+        }   
+    
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>

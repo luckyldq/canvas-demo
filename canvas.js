@@ -201,8 +201,7 @@ function fillGraph(ctx, style, path=undefined){
         ctx.fill();
     }
 }
-/////////// 绘制全局效果 ////////////////////
-// 设置阴影样式
+/////////// 绘制全局效果 ////////////////////    
 /* 
 绘制阴影比较消耗浏览器性能
 x：水平偏移
@@ -210,6 +209,7 @@ y：垂直偏移
 style：阴影颜色
 blur：阴影模糊度
 */
+// 设置阴影样式
 function setShadowStyle(extendOptions){
     let option = {
         // ctx,x,y,blur
@@ -223,6 +223,13 @@ function setShadowStyle(extendOptions){
     ctx.shadowOffsetX = x;
     ctx.shadowOffsetY = y;
     ctx.shadowBlur = blur;
+}
+// 隐藏阴影样式
+function hideShadow(ctx){
+    ctx.shadowstyle = undefined;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.shadowBlur = 0;
 }
 /////////// 绘制复杂业务图形 ////////////////  
 // 绘制某个坐标的十字线
@@ -378,6 +385,7 @@ export {
     drawSector,
     drawCircle,
     setShadowStyle,
+    hideShadow,
     drawCrossLine,
     drawGrid,
     drawLoop,

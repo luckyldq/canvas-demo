@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>文本编辑器</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    .select-box{
+        position: absolute;
+        /* width: 100px;height: 100px;left: 0;right: 0; */display: none;
+        border: 1px solid red;
+    }
+    canvas{
+        border: 1px solid #000;margin: 10px;
+    }
+</style>
+</head>
+<body>
+    <div class="canvas-box">
+        <div class="select-box"></div>
+        <canvas id="mycanvas"></canvas>
+    </div>
+    <script type="module">
+        /* 
+        功能小结：
+            鼠标点击确定光标位置，光标闪烁效果；
+            输入字母，光标跟随后移；
+            鼠标点击，定位光标到行字母中间；
+            左右箭头移动，光标跟随移动；
+            backspace删除光标前一个字母；
+            光标处插入字母，删除字母；
+        */
+        import {strokeLine, drawText, drawCircle} from '../canvas.js'
+
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+        let w = 400,
+            h = 400;
+        canvas.width = w;
+        canvas.height = h;
+        
+        let canvasImageData;
+        saveImageData();
+        
+        let font = '48px 宋体';
+        ctx.font = font;
+
+        let cursor = new TextCursor(),
+            line = new TextLine(0,0);
+
+        canvas.addEventListener('mousedown', mouseDown);
+        document.addEventListener('keypress', keyPress);
+        document.addEventListener('keydown', keyDown);
+
+        function mouseDown(e){   
+            let detalY = Math.abs(e.offsetY - line.bottom);
+            let cursorLeft, cursorBottom;
+            if(detalY < 20){ // 落在当前的line中，则做插入操作
+                // 计算光标落在第几个字符后面
+                let caret = Math.round((e.offsetX - line.left)/getWordWidth());
+                line.updateCaret(caret);
+                cursorLeft = line.left + getWordWidth() * caret;
+                cursorBottom = line.bottom;
+            }else{ // 设置新行的位置
+                line.left = cursorLeft = e.offsetX;
+                line.bottom = cursorBottom = e.offsetY;
+            }
+            cursor.moveCursor(ctx, cursorLeft, cursorBottom, canvasImageData);
+           
+        }
+        function keyDown(e){
+            if(e.keyCode === 8){ // 退格键
+                updateLineAndCusor(e);
+            }
+            else if(e.keyCode == 37){ // 向左
+                if(line.caret <= 0) {return false;}
+                line.caret -= 1;
+                let cursorLeft = line.left + getWordWidth() * line.caret;
+                cursor.moveCursor(ctx, cursorLeft, line.bottom, canvasImageData);
+            }
+            else if(e.keyCode == 39){ // 向右
+                line.caret += 1;
+                let cursorLeft = line.left + getWordWidth() * line.caret;
+                cursor.moveCursor(ctx, cursorLeft, line.bottom, canvasImageData);
+            }
+        }
+        function keyPress(e){
+            // let key = String.fromCharCode(e.which);
+            let key = e.key;
+            if(e.keyCode !== 8 && !e.ctrlKey && !e.metaKey){
+                updateLineAndCusor(e, key, 'insert');
+            }
+        }
+        function saveImageData(){
+            canvasImageData = ctx.getImageData(0,0,w,h);
+        }
+        // insert--插入 delete--删除
+        function updateLineAndCusor(e, key='', type='delete'){
+            e.preventDefault();
+            ctx.save();
+            // 擦除光标
+            cursor.erase(ctx, canvasImageData);
+            // 清除canvas当前行
+            line.erase(ctx, canvasImageData);
+            if(type == 'insert'){
+                // 将字母插入到line的text中
+                line.insert(key);
+            }
+            else if(type == 'delete'){
+                // 移除光标前的一个字符
+                line.removeCharaterBeforeCaret();
+            }
+            
+            // 绘制line
+            line.draw(ctx);
+            saveImageData();
+            // 绘制光标
+            cursor.moveCursor(ctx, line.left + getWordWidth() * line.caret, line.bottom, canvasImageData);
+        }
+
+
+        // 光标 矩形填充，而不是绘制线条，方便clip区域，擦除
+        function TextCursor(width, fillStyle){
+            this.fillStyle = fillStyle || 'rgba(0, 0, 0, 0.5)';
+            this.width = width || 2;
+            this.left = 0;
+            this.top = 0;
+            this.blinkInterval = false;
+            this.blinkOffTimer = false;
+            this.blink_on = 500;
+            this.blink_off =500;
+        }
+        TextCursor.prototype.getHeight = function(ctx){
+            let w = ctx.measureText('W').width;
+            return w + w/6;
+        }
+        TextCursor.prototype.createPath = function(ctx){
+            ctx.beginPath();
+            ctx.rect(this.left, this.top, this.width, this.getHeight(ctx));
+        }
+        TextCursor.prototype.draw = function(ctx, left, bottom){
+            ctx.save();
+            this.left = left;
+            this.top = bottom - this.getHeight(ctx);
+            this.createPath(ctx);
+            ctx.fillStyle = this.fillStyle;
+            ctx.fill();
+            ctx.restore();
+        }
+        TextCursor.prototype.erase = function(ctx, imageData){
+            ctx.putImageData(imageData, 0, 0, this.left, this.top, this.width, this.getHeight(ctx)+1);
+        }
+        TextCursor.prototype.blinkFn = function(ctx, left, bottom, imageData){
+            this.draw(ctx, left, bottom);
+            this.blinkOffTimer = setTimeout(()=>{
+                this.erase(ctx, imageData);
+            },this.blink_on);
+        }
+        TextCursor.prototype.blinkCursor = function(ctx, left, bottom, imageData){
+            this.blinkInterval = setInterval(() => {
+                this.blinkFn(ctx, left, bottom, imageData);
+            }, this.blink_on + this.blink_off);
+        }
+        TextCursor.prototype.moveCursor = function(ctx, left, bottom, imageData){
+            // 移除之前的cursor数据
+            this.erase(ctx, imageData);
+            saveImageData();
+            if(this.blinkInterval){
+                clearInterval(this.blinkInterval);
+                this.blinkInterval = null;
+            }
+            if(this.blinkOffTimer){
+                clearTimeout(this.blinkOffTimer);
+                this.blinkOffTimer = null;
+            }
+            // 更新cursor
+            this.blinkFn(ctx, left, bottom, imageData);
+            this.blinkCursor(ctx, left, bottom, imageData);
+        }
+        // line 文本行对象
+        function TextLine(x, y){
+            this.text = '';
+            this.left = x;
+            this.bottom = y;
+            this.caret = 0;  // 插入文本的位置，在第几个字符处
+        }
+        // 行中插入数据
+        TextLine.prototype.insert = function(text){
+            this.text = this.text.substr(0, this.caret) + text + this.text.substr(this.caret);
+            this.caret += text.length;
+        }
+        // 擦除光标前一个字符，如，backspace键
+        TextLine.prototype.removeCharaterBeforeCaret = function(){
+            if(this.caret == 0){ return; }
+            this.text = this.text.substr(0, this.caret-1) + this.text.substr(this.caret);
+            this.caret -= 1;
+        }
+        // 绘制
+        TextLine.prototype.draw = function(ctx){
+            ctx.save();
+            ctx.textAlign = 'start';
+            ctx.textBaseline = 'bottom';
+            // console.log('11',this.text)
+            ctx.strokeText(this.text, this.left, this.bottom);
+            ctx.fillText(this.text, this.left, this.bottom);
+            ctx.restore();
+        }
+        // 更新当前位置
+        TextLine.prototype.updateCaret = function(num){
+            this.caret = num;
+        }
+        TextLine.prototype.getWidth = function(ctx){
+            return ctx.measureText(this.text).width;
+        }
+        TextLine.prototype.erase = function(ctx, imageData){
+            // ctx.putImageData(imageData, 0, 0);
+            ctx.clearRect(0,0,w,h);
+        }
+        // 计算单个字的字宽
+        function getWordWidth(){
+            return ctx.measureText('w').width;
+        }
+        
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>
