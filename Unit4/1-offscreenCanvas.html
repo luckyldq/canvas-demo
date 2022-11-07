@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>离屏canvas实现图片缩放</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    canvas{
+        border: 1px solid #000;margin: 10px;
+    }
+</style>
+</head>
+<body>
+    <input type="range" min="0.1" max="3.0" step="0.1" value="1.0" >
+    <div class="canvas-box">
+        <canvas id="mycanvas"></canvas>
+    </div>
+    <script type="module">
+        import {strokeLine, drawText, drawCircle} from '../canvas.js'
+
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+
+        const offscreenCanvas = document.createElement('canvas');
+        const offscreenCtx = offscreenCanvas.getContext('2d');
+
+        let w = 400,
+            h = 400;
+        canvas.width = w;
+        canvas.height = h;
+        offscreenCanvas.width = w;
+        offscreenCanvas.height = h;
+
+        let scale = 1;
+
+        // 初始化
+        let image = new Image();
+        image.src = '../images/waterfall.png';
+        image.onload = function(){
+            ctx.drawImage(image, 0, 0, w, h);
+            drawWaterMark();
+            offscreenCtx.drawImage(image, 0, 0, w, h);
+        }
+
+        let scaleHandle = document.querySelector('input[type=range]');
+        scaleHandle.addEventListener('change', scaleChange);
+
+        function scaleChange(){
+            // 范围选择器的当前值
+            // console.log(this.value) // 要缩放的值
+            scale = this.value;
+            scaleImage(scale);
+        }
+        // 缩放
+        function scaleImage(scale){
+            let sw = scale * w,
+                sh = scale * h;
+            ctx.clearRect(0, 0, w, h);
+            ctx.drawImage(offscreenCanvas, w/2 - sw/2, h/2 - sh/2, sw, sh);
+            drawWaterMark();
+        }
+        // 绘制水印
+        function drawWaterMark(){
+            ctx.save();
+            let line  = 'waterMark',
+                FONT_HEIGHT = 60;
+            ctx.font = FONT_HEIGHT + 'px Arial';
+            let lineWidth = ctx.measureText(line).width; // 没获取width，导致绘制文字的x点为NaN
+            ctx.strokeStyle = 'yellow';
+            ctx.fillStyle = 'rgba(100,140,230,0.5)';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.strokeText(line, w - lineWidth/2, h/2 - FONT_HEIGHT/2);
+            ctx.fillText(line, w - lineWidth/2, h/2 - FONT_HEIGHT/2);
+            ctx.restore();
+        }
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>

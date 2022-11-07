@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>图片滤镜效果</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    canvas{
+        border: 1px solid #000;margin: 10px;vertical-align: top;
+    }
+</style>
+</head>
+<body>
+    
+    <select name="filtername" id="">
+        <option value="origin" checked>原图</option>
+        <option value="emboss">浮雕</option>
+        <option value="sunglass">太阳镜</option>
+        <option value="gray">灰度</option>
+    </select>
+    <canvas id="mycanvas"></canvas>
+
+    <script type="module">
+        import {drawRect, drawText, drawCircle} from '../canvas.js'
+
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let w = 400,
+            h = 400;
+        canvas.width = w;
+        canvas.height = h;
+
+        let imageData,
+            imageDataCopy = ctx.createImageData(w, h);;
+
+        // 思路1：备份一份imageData，每次根据选框的位置尺寸修改imageData对应位置的像素透明度，在put到canvas中；（消耗性能）
+        // 思路2：定义离屏canvas，修改所有imageData的透明度，每次根据选框的尺寸选取离屏canvas对应位置的数据，put到canvas中；
+        // 思路3：使用createImageData()来存放修改透明度的imageData数据；
+
+        // 初始化
+        let image = new Image();
+        image.src = '../images/curved-road.png';
+        image.onload = function(){
+            // ctx.drawImage(image, 0, 0, w, h);
+            originFilter(image);
+            imageData = ctx.getImageData(0, 0, w, h);
+        }
+
+        let el = document.querySelector('select[name=filtername]');
+        el.addEventListener('change',function(){
+            let tmpFn = this.value + 'Filter';
+            console.log(tmpFn)
+            eval(tmpFn + '(imageData)');
+        });
+
+        // 原图
+        function originFilter(image){
+            ctx.drawImage(image, 0, 0, w, h);
+        }
+        // 浮雕滤镜计算方法
+        function embossFilter(imageData){
+            // console.log('emboss');
+            let width = imageData.width;
+            let data = imageData.data;
+            let targetData = imageDataCopy.data;
+            let length = data.length;
+
+            for(let i=0; i<length; i++){
+                // 边界处理
+                if(i <= length - width*4){
+                    if((i+1)%4 !== 0){
+                        // 最右侧的一个像素，取上一个位置的信息
+                        if((i+4) % (width*4) == 0){
+                            targetData[i] = targetData[i-4];
+                            targetData[i+1] = targetData[i-3];
+                            targetData[i+2] = targetData[i-2];
+                            targetData[i+3] = targetData[i-1];
+                            i += 3;
+                        }
+                        else{
+                            // 颜色分量     平均值  +  加上当前像素的2倍 - 下个像素同一个颜色分量值 - 往后四行的颜色分量值
+                            targetData[i] = 255/2  + 2*data[i] - data[i+4] - data[i + width *4];
+                        }
+                    }
+                    else{
+                        // 透明度
+                        targetData[i] = data[i];
+                    }
+                }
+                else{ // 最后几行，没有下面的像素，所以复制上面的计算过的数据
+                    targetData[i] = targetData[i - width*4];
+                }
+            }
+            
+            ctx.putImageData(imageDataCopy, 0, 0);
+        }
+        // 太阳滤镜计算方法
+        function sunglassFilter(imageData){
+            // console.log('sunglass');
+            let width = imageData.width;
+            let data = imageData.data;
+            let targetData = imageDataCopy.data;
+            let length = data.length;
+
+            for(let i=0;i<length;i++){
+                if((i+1)%4 !== 0){
+                    if((i+4)%(width*4) == 0){ // 最右侧像素
+                        targetData[i] = targetData[i-4];
+                        targetData[i+1] = targetData[i-3];
+                        targetData[i+2] = targetData[i-2];
+                        targetData[i+3] = targetData[i-1];
+                        i+=3;
+                    }
+                    else{
+                        // 当前颜色分量值的两倍 - 下一个像素点的分量值 - 下一个像素分量值的0.5倍
+                        targetData[i] = 2*data[i] - data[i+4] - 0.5*data[i+4];
+                    }
+                }
+                else{
+                    targetData[i] = data[i];
+                }
+            }
+
+            ctx.putImageData(imageDataCopy, 0, 0);
+        }
+        // 灰度滤镜计算方法
+        function grayFilter(imageData){
+            console.log('gray');
+            let width = imageData.width;
+            let data = imageData.data;
+            let targetData = imageDataCopy.data;
+            let length = data.length;
+
+            for(let i=0;i<length;i++){
+                if((i+1)%4 !== 0){
+                    // 当前三个颜色分量值的平均值
+                    let avg = (data[i] + data[i+1] + data[i+2])/3;
+                    targetData[i] = targetData[i+1] = targetData[i+2] = avg;
+                    i+=2; // 不是i+=3;这里是过掉两个
+                }
+                else{
+                    targetData[i] = data[i];
+                }
+            }
+
+            ctx.putImageData(imageDataCopy, 0, 0);
+        }
+        
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>

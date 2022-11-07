@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>图片缩放</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    canvas{
+        border: 1px solid #000;margin: 10px;
+    }
+</style>
+</head>
+<body>
+    <input type="range" min="0.1" max="3.0" step="0.1" value="1.0" >
+    <div class="canvas-box">
+        <canvas id="mycanvas"></canvas>
+    </div>
+    <script type="module">
+        /* 
+        功能小结：
+            鼠标点击确定光标位置，光标闪烁效果；
+            输入字母，光标跟随后移；
+            鼠标点击，定位光标到行字母中间；
+            左右箭头移动，光标跟随移动；
+            backspace删除光标前一个字母；
+            光标处插入字母，删除字母；
+        */
+        import {strokeLine, drawText, drawCircle} from '../canvas.js'
+
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+        let w = 400,
+            h = 400;
+        canvas.width = w;
+        canvas.height = h;
+
+        let scale = 1;
+
+        // 
+        let image = new Image();
+        image.src = '../images/waterfall.png';
+        image.onload = function(){
+            ctx.drawImage(image, 0, 0, w, h);
+        }
+
+        let scaleHandle = document.querySelector('input[type=range]');
+        scaleHandle.addEventListener('change', scaleChange);
+
+        function scaleChange(){
+            // 范围选择器的当前值
+            // console.log(this.value) // 要缩放的值
+            scale = this.value;
+            scaleImage(scale);
+        }
+        // 可以使用ctx的transform实现，也可以计算缩放后图片的dx,dy,dw,dh
+        // 也可以将缩放后的图片绘制在离屏canvas上，在将离屏canvas的内容绘制在目标canvas上；
+        function scaleImage(scale){
+            let sw = scale *w,
+                sh = scale * h;
+            ctx.save();
+            ctx.clearRect(0,0,w,h);
+            ctx.drawImage(image, w/2 - sw/2, h/2 - sh/2, sw, sh);
+            ctx.restore();
+        }   
+        
+        
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>

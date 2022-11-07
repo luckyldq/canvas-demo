@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>放大选框图片，选中时改变透明度</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    canvas{
+        border: 1px solid #000;margin: 10px;
+    }
+</style>
+</head>
+<body>
+    <div class="canvas-box">
+        <canvas id="mycanvas"></canvas>
+    </div>
+    <script type="module">
+        import {drawRect, drawText, drawCircle} from '../canvas.js'
+
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let w = 400,
+            h = 400;
+        canvas.width = w;
+        canvas.height = h;
+
+        let imageData,
+            imageDataCopy = ctx.createImageData(w, h);
+
+        // 思路1：备份一份imageData，每次根据选框的位置尺寸修改imageData对应位置的像素透明度，在put到canvas中；（消耗性能）
+        // 思路2：定义离屏canvas，修改所有imageData的透明度，每次根据选框的尺寸选取离屏canvas对应位置的数据，put到canvas中；
+        // 思路3：使用createImageData()来存放修改透明度的imageData数据；
+
+        // 初始化
+        let image = new Image();
+        image.src = '../images/arch.png';
+        image.onload = function(){
+            ctx.drawImage(image, 0, 0, w, h);
+        }
+
+        let mouseDownPoint = {
+                x:0,
+                y:0
+            },
+            isDrag = false,
+            rubberbandRectangle = {
+                left:0,
+                top:0,
+                width:0,
+                height:0
+            };
+        canvas.addEventListener('mousedown', mouseDown);
+        canvas.addEventListener('mousemove', mouseMove);
+        canvas.addEventListener('mouseup', mouseUp);
+
+        function mouseDown(e){
+            mouseDownPoint.x = e.offsetX;
+            mouseDownPoint.y = e.offsetY;
+            // 记录当前canvas数据，并拷贝一份修改透明度
+            imageData = ctx.getImageData(0,0,w,h);
+            // console.log(imageData)  透明度是255
+            copyImageData(imageDataCopy, imageData);
+            // ctx.putImageData(imageDataCopy, 0, 0); // 测试imageDataCopy的效果
+            isDrag = true;
+        }
+        function mouseMove(e){
+            if(!isDrag){ return false; }
+            // 恢复数据
+            ctx.putImageData(imageData, 0, 0);
+            // 设置选框位置信息
+            setRubberPositon(e.offsetX, e.offsetY);
+            // 用透明图片数据，替换选框中数据
+            let deviceWidthOverCSSPixels = imageDataCopy.width / w,
+            deviceHeightOverCSSPixels = imageDataCopy.height / h;
+            ctx.putImageData(imageDataCopy, 0, 0,
+                rubberbandRectangle.left,rubberbandRectangle.top,
+                rubberbandRectangle.width * deviceWidthOverCSSPixels,
+                rubberbandRectangle.height * deviceHeightOverCSSPixels);
+            // 绘制选框边框
+            drawRect({
+                ctx,
+                x: rubberbandRectangle.left,
+                y: rubberbandRectangle.top,
+                w: rubberbandRectangle.width,
+                h: rubberbandRectangle.height,
+                style: 'blue'
+            });
+        }
+        function setRubberPositon(x, y){
+            rubberbandRectangle.left = Math.min(x, mouseDownPoint.x);
+            rubberbandRectangle.top = Math.min(y, mouseDownPoint.y);
+            rubberbandRectangle.width = Math.abs(x - mouseDownPoint.x);
+            rubberbandRectangle.height = Math.abs(y - mouseDownPoint.y);
+        }
+        function mouseUp(){
+            isDrag = false;
+            // 恢复数据
+            ctx.putImageData(imageData, 0, 0);
+            // 用选框的数据填充canvas
+            ctx.drawImage(canvas,
+                rubberbandRectangle.left,
+                rubberbandRectangle.top,
+                rubberbandRectangle.width,
+                rubberbandRectangle.height,
+                0, 0, w, h);
+        }
+
+        // 复制imageData，并调整整体数据透明度，填充到imageDataCopy
+        function copyImageData(imageDataCopy, imageData){
+            let i = 0;
+            // console.log(imageData);
+            // 为什么要先循环出前三个？
+            for (i=0; i < 3; i++) {
+                imageDataCopy.data[i] = imageData.data[i];
+            }
+            for (i=3; i < imageData.data.length - 4; i+=4) {
+                imageDataCopy.data[i]   = imageData.data[i] / 2; // Alpha: more transparent
+                imageDataCopy.data[i+1] = imageData.data[i+1]; // Red
+                imageDataCopy.data[i+2] = imageData.data[i+2]; // Green
+                imageDataCopy.data[i+3] = imageData.data[i+3]; // Blue
+            }
+        }
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>
