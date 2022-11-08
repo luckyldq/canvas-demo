@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>淡入淡出效果</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    canvas{
+        border: 1px solid #000;margin: 10px;vertical-align: top;
+    }
+    .btn-box{
+        float: left;padding:20px 10px;
+    }
+    button{
+        cursor: pointer;display: block;
+    }
+</style>
+</head>
+<body>
+    <div class="btn-box">
+        <button id="fadeIn">淡入</button>
+        <button id="fadeOut">淡出</button>
+    </div>
+    <canvas id="mycanvas"></canvas>
+
+    <script type="module">
+
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+        const offscreenCanvas = document.createElement('canvas'),
+                offscreenCanvasCtx = offscreenCanvas.getContext('2d');
+
+        let w = 400,
+            h = 400;
+        canvas.width = w;
+        canvas.height = h;
+        offscreenCanvas.width = w;
+        offscreenCanvas.height = h;
+
+        let originImageData; // 原始图片的imageData
+
+        // 初始化
+        let image = new Image();
+        image.src = '../../images/curved-road.png';
+        image.onload = function(){
+            drawOffscreenImage(image);
+            // ctx.drawImage(offscreenCanvas, 0, 0);
+        }
+
+        const fadeInButton = document.querySelector('#fadeIn'),
+              fadeOutButton = document.querySelector('#fadeOut');
+        
+        const fadeStep = 100; // 图像经过变化的次数
+        let interVal;   // 透明度变化定时器
+
+        fadeInButton.onclick = function(){
+            fadeIn(offscreenCanvasCtx.getImageData(0, 0, w, h), fadeStep);
+        }
+        fadeOutButton.onclick = function(){
+            fadeOut(offscreenCanvasCtx.getImageData(0, 0, w, h), fadeStep);
+        }
+
+        
+        function fadeIn(imageData, fadeStep){
+            let frame = 0; // 计算循环次数
+            let length = imageData.data.length;
+            // 将alpha全部设置为0
+            for(let i=3; i<length; i+=4){
+                imageData.data[i] = 0;
+            }
+            // 改变透明度
+            interVal && clearInterval(interVal);
+            interVal = setInterval(()=>{
+                frame ++;
+                if(frame > fadeStep){
+                    clearInterval(interVal);
+                }
+                // 更新alpha的值
+                transparencyChange(imageData, fadeStep);
+                // 更新canvas
+                ctx.putImageData(imageData, 0, 0);
+            }, 16);
+        }
+        function fadeOut(imageData, fadeStep){
+            let frame = 0; // 计算循环次数
+            let length = imageData.data.length;
+            // 改变透明度
+            interVal && clearInterval(interVal);
+            interVal = setInterval(()=>{
+                frame ++;
+                if(frame > fadeStep){
+                    clearInterval(interVal);
+                }
+                // 更新alpha的值
+                transparencyChange(imageData, fadeStep, -1);
+                // 更新canvas
+                ctx.putImageData(imageData, 0, 0);
+            }, 16);
+        }
+        // 透明度变化  flag 1--加  -1--减
+        function transparencyChange(imageData, fadeStep, flag=1){
+            let length = imageData.data.length;
+            let perStepNum, originAlpha, curAlpha, targetAlpha;
+            for(let i = 3; i<length; i+=4){
+                originAlpha = originImageData.data[i];
+                curAlpha = imageData.data[i];
+                perStepNum = Math.ceil(originAlpha / fadeStep);
+                targetAlpha = curAlpha + flag * perStepNum;
+                if(flag > 0 && targetAlpha > originAlpha){
+                    targetAlpha = originAlpha;
+                }
+                else if(flag <0 && targetAlpha <= 0){
+                    targetAlpha = 0;
+                }
+                imageData.data[i] = targetAlpha;
+            }
+        }
+        // 在离屏canvas上绘制原图
+        function drawOffscreenImage(image){
+            offscreenCanvasCtx.drawImage(image, 0, 0, w, h);
+            originImageData = offscreenCanvasCtx.getImageData(0, 0, w, h);
+        }
+        
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>

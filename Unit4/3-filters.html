@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
 <meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
-<title>图片滤镜效果</title>
+<title>图片各种滤镜效果</title>
 <style>
     body, html{
         position: relative;padding:0;margin: 0;overflow: hidden;
@@ -36,7 +36,7 @@
         canvas.height = h;
 
         let imageData,
-            imageDataCopy = ctx.createImageData(w, h);;
+            imageDataCopy = ctx.createImageData(w, h);
 
         // 思路1：备份一份imageData，每次根据选框的位置尺寸修改imageData对应位置的像素透明度，在put到canvas中；（消耗性能）
         // 思路2：定义离屏canvas，修改所有imageData的透明度，每次根据选框的尺寸选取离屏canvas对应位置的数据，put到canvas中；
@@ -99,7 +99,7 @@
             
             ctx.putImageData(imageDataCopy, 0, 0);
         }
-        // 太阳滤镜计算方法
+        // 太阳镜滤镜计算方法
         function sunglassFilter(imageData){
             // console.log('sunglass');
             let width = imageData.width;

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>太阳镜下的滤镜效果</title>
+<style>
+      body, html{
+            position: relative;padding:0;margin: 0;overflow: hidden;
+      }
+      canvas{
+            border: 1px solid #000;margin: 10px;vertical-align: top;
+      }
+</style>
+</head>
+<body>
+    
+      <select name="filtername" id="">
+         <option value="origin" checked>原图</option>
+         <option value="sunglass">太阳镜</option>
+      </select>
+      <canvas id="mycanvas"></canvas>
+
+      <script type="module">
+
+            const canvas = document.querySelector('canvas');
+            const ctx = canvas.getContext('2d');
+            const offscreenCanvas = document.createElement('canvas'),
+                  offscreenCanvasCtx = offscreenCanvas.getContext('2d');
+
+            let w = 400,
+                  h = 400;
+            canvas.width = w;
+            canvas.height = h;
+
+            let imageData,
+                imageDataCopy = ctx.createImageData(w, h);
+
+            // 初始化
+            let image = new Image();
+            image.src = '../../images/curved-road.png';
+            image.onload = function(){
+                  // ctx.drawImage(image, 0, 0, w, h);
+                  originFilter(image);
+                  imageData = ctx.getImageData(0, 0, w, h);
+            }
+
+            let el = document.querySelector('select[name=filtername]');
+            el.addEventListener('change',function(){
+                  let tmpFn = this.value + 'Filter';
+                  // eval(tmpFn + '(imageData)');
+                  if(tmpFn == 'originFilter'){
+                        originFilter(image);
+                  }
+                  else{
+                        useFilter(tmpFn);
+                  }
+            });
+
+            // worker和js文件中的通信
+            let filterWorker = new Worker('./js/filters.js');
+            function useFilter(fnName){
+                  filterWorker.postMessage({ // 向worker的onmessage传递参数
+                        fnName, imageData, imageDataCopy
+                  }); 
+                  filterWorker.onmessage = function(e){
+                        offscreenCanvasCtx.putImageData(e.data, 0, 0);
+                        drawSunglass();
+                        drawSunglassAffair();
+                  }
+            }
+
+            // 原图
+            function originFilter(image){
+                  ctx.drawImage(image, 0, 0, w, h);
+            }
+
+            // 绘制太阳镜路径
+            const sunglassLeft = [100, 200],
+                  sunglassRight = [300, 200],
+                  r = 80;
+            const leftDot = [sunglassLeft[0] + (r-15) * Math.cos(Math.PI/6), sunglassLeft[1] - (r-15) * Math.sin(Math.PI/6)],
+                  rightDot = [sunglassRight[0] - (r-15) * Math.cos(Math.PI/6), sunglassRight[1] - (r-15) * Math.sin(Math.PI/6)];
+            // 绘制太阳镜片和内容    
+            function drawSunglass(){
+                  ctx.save();
+                  ctx.beginPath();
+                  ctx.arc(sunglassLeft[0], sunglassLeft[1], r, 0, 2*Math.PI);
+                  ctx.arc(sunglassRight[0], sunglassRight[1], r, 0, 2*Math.PI);
+                  ctx.clip();
+                  ctx.drawImage(offscreenCanvas, 0, 0, w, h);
+                  ctx.restore();
+            }
+            // 绘制太阳镜连接线和点
+            function drawSunglassAffair(){
+                  ctx.beginPath();
+                  ctx.arc(leftDot[0], leftDot[1], 5, 0, 2*Math.PI);
+                  ctx.moveTo(rightDot[0], rightDot[1]);
+                  ctx.arc(rightDot[0], rightDot[1], 5, 0, 2*Math.PI);
+                  ctx.fill();
+                  ctx.beginPath();
+                  ctx.moveTo(leftDot[0], leftDot[1]);
+                  ctx.quadraticCurveTo(sunglassLeft[0] + (sunglassRight[0] - sunglassLeft[0])/2, sunglassLeft[1] - r, rightDot[0], rightDot[1]);
+                  ctx.stroke();
+            }
+         
+      </script>
+      <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+      <script>
+            var vConsole = new VConsole();
+      </script>
+</body>
+</html>
