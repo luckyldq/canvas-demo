@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>放大镜放大图片 -- 拖拽图片到canvas</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    canvas{
+        border: 1px solid #000;margin: 10px;vertical-align: top;
+    }
+    .btn-box{
+        float: left;padding:20px 10px;
+    }
+    input[type=range]{
+        cursor: pointer;display: block;
+    }
+</style>
+</head>
+<body>
+    <div class="btn-box">
+        <input name="magnifytime" type="range" min="1" max="5" step="0.1" value="1">放大倍数</input>
+        <input name="magnifyR" type="range" min="50" max="100" step="10" value="80">放大镜大小</input>
+    </div>
+    <canvas id="mycanvas"></canvas>
+
+    <script type="module">
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+        const offscreenCanvas = document.createElement('canvas'),
+              offscreenCanvasCtx = offscreenCanvas.getContext('2d');
+
+        let w = 400,
+            h = 400;
+        canvas.width = w;
+        canvas.height = h;
+        offscreenCanvas.width = w;
+        offscreenCanvas.height = h;
+
+        let glassCenterPoint = {
+                x: 200,
+                y: 200
+            },
+            mousePoint = {
+                x: 0,
+                y: 0
+            },
+            isDrag = false;
+
+        let image = new Image();
+        image.src = '../images/waterfall.png';
+        image.onload = function(){
+            ctx.clearRect(0, 0, w, h);
+            ctx.drawImage(image, 0, 0, w, h);
+            // 绘制放大镜区域的内容
+            drawMagnifyGlassCont(glassCenterPoint);
+            // 绘制放大镜外观
+            drawMagnifyGlassCircle(glassCenterPoint);
+        }
+        
+        let magnifyScaleEl = document.querySelector('input[name=magnifytime]');
+        let magnifyREl = document.querySelector('input[name=magnifyR]');
+
+        let magnifyR = magnifyREl.value, // 放大镜半径 
+            magnifyScale = magnifyScaleEl.value; // 放大倍数
+        // console.log(magnifyScale, magnifyR);
+        let magnifyRectangle = {  // 放大镜外接矩形信息
+            x:0,
+            y:0,
+            width:0,
+            height:0
+        }
+        
+        // 调整倍数监听函数
+        magnifyScaleEl.addEventListener('change', function(){
+            changeScale(this);
+        });
+        function changeScale(obj){
+            getmagnifyScale(obj.value);
+            upDataGraph();
+        }
+
+        // 调整放大镜半径
+        magnifyREl.addEventListener('change', function(){
+            changeR(this);
+        });
+        function changeR(obj){
+            getMagnifyR(obj.value);
+            upDataGraph();
+        }
+        
+        // 更新图像
+        function upDataGraph(){
+            // 清空画布
+            ctx.clearRect(0,0,w,h);
+            // 绘制原图
+            ctx.drawImage(image, 0, 0, w, h);
+            // 绘制放大镜区域的内容
+            drawMagnifyGlassCont(glassCenterPoint);
+            // 绘制放大镜外观
+            drawMagnifyGlassCircle(glassCenterPoint);
+        }
+
+        function getmagnifyScale(val){
+            magnifyScale = val;
+        }
+        function getMagnifyR(val){
+            magnifyR = val;
+        }
+        
+        // 鼠标移动
+        canvas.addEventListener('mousedown', mouseDown);
+        canvas.addEventListener('mousemove', mouseMove);
+        canvas.addEventListener('mouseup', mouseUp);
+        function mouseDown(e){
+            // console.log(e)
+            isDrag = true;
+            mousePoint = {
+                x: e.offsetX,
+                y: e.offsetY
+            }
+        }
+        function mouseMove(e){
+            if(!isDrag) return;
+            mousePoint = {
+                x: e.offsetX,
+                y: e.offsetY
+            };
+            glassCenterPoint = mousePoint;
+            upDataGraph();
+        }
+        function mouseUp(e){
+            isDrag = false;
+        }
+        
+        // 绘制放大镜中的内容
+        function drawMagnifyGlassCont(mouse){
+            var scaledMagnifyRectangle;
+            // debugger
+
+            if (window.netscape && netscape.security.PrivilegeManager)
+                netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
+
+            // 放大镜圆心坐标
+            let magnifyingGlassX = mouse.x,
+            magnifyingGlassY = mouse.y;
+            
+            // 计算放大镜外接矩形左上角坐标和宽高
+            magnifyRectangle.x = mouse.x - magnifyR;
+            magnifyRectangle.y = mouse.y - magnifyR;
+            magnifyRectangle.width = magnifyR * 2;
+            magnifyRectangle.height = magnifyR * 2;
+
+            // 获取外接矩形区域的图像数据
+            // imageData = ctx.getImageData(magnifyRectangle.x,
+            //                                 magnifyRectangle.y,
+            //                                 magnifyRectangle.width,
+            //                                 magnifyRectangle.height);
+
+            ctx.save();
+            // 缩放外接矩形尺寸
+            scaledMagnifyRectangle = {
+                width:  magnifyRectangle.width  * magnifyScale,
+                height: magnifyRectangle.height * magnifyScale
+            };
+
+            // 设置裁剪区域
+            ctx.beginPath();
+            ctx.arc(magnifyingGlassX, magnifyingGlassY, magnifyR, 0, Math.PI*2, false);
+            ctx.clip();
+            // 在放大镜区域内绘制图像
+            ctx.drawImage(canvas,
+                        magnifyRectangle.x, magnifyRectangle.y, magnifyRectangle.width, magnifyRectangle.height,
+                        magnifyRectangle.x + magnifyRectangle.width/2 - scaledMagnifyRectangle.width/2,
+                        magnifyRectangle.y + magnifyRectangle.height/2 - scaledMagnifyRectangle.height/2,
+                        scaledMagnifyRectangle.width, scaledMagnifyRectangle.height);
+            ctx.restore();
+
+            // ctx.arc(magnifyingGlassX, magnifyingGlassY, magnifyR, 0, 2 * Math.PI);
+            // ctx.stroke();
+        }
+
+        // 绘制放大镜的外观
+        function drawMagnifyGlassCircle(mouse){
+            // 放大镜 渐变填充厚度
+            var gradientThickness = Math.round(magnifyR / 7);
+            gradientThickness = Math.max(10, gradientThickness);
+            gradientThickness = Math.min(40, gradientThickness);
+            ctx.save();
+            
+            ctx.shadowColor = 'rgba(52, 72, 35, 1.0)';
+            ctx.shadowOffsetX = 2;
+            ctx.shadowOffsetY = 2;
+            ctx.shadowBlur = 20;
+
+            // 渐变填充
+            ctx.lineWidth = gradientThickness;
+            ctx.strokeStyle = 'rgb(0, 0, 255, 0.3)';
+            ctx.beginPath();
+            ctx.arc(mouse.x, mouse.y, magnifyR, 0, Math.PI*2, false);
+            ctx.clip();
+            var gradient = ctx.createRadialGradient(mouse.x, mouse.y, magnifyR - gradientThickness, mouse.x, mouse.y, magnifyR);
+            gradient.addColorStop(0,   'rgba(0,0,0,0.2)');
+            gradient.addColorStop(0.80, 'rgb(235,237,255)');
+            gradient.addColorStop(0.90, 'rgb(235,237,255)');
+            gradient.addColorStop(1.0, 'rgba(150,150,150,0.9)');
+            ctx.strokeStyle = gradient;
+            ctx.stroke();
+
+            // 描边
+            ctx.beginPath();
+            ctx.arc(mouse.x, mouse.y, magnifyR-gradientThickness/2, 0, Math.PI*2, false);
+            ctx.clip();
+            ctx.lineWidth = gradientThickness;
+            ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+
+        // 拖拽图像到canvas  当拖拽的元素进入有效的放置位置时
+        document.addEventListener('dragenter',function(e){
+            // console.log(444)   // console.log(000)在严格模式不行
+            e.preventDefault();
+            // e.dataTransfer.effectAllowed = 'copy'; // 对拖拽的数据使用复制操作
+        }, false);
+
+        canvas.addEventListener('dragover',function(e){
+            // console.log(222);
+            e.preventDefault();  // 使元素能够接收drop事件
+        }, false);
+
+        canvas.addEventListener('drop',function(e){
+            console.log(111);
+            e.preventDefault();
+            let file = e.dataTransfer.files[0];  // 拖拽的数据
+            window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
+            window.requestFileSystem(window.TEMPORARY, 5*1024*1024, function(fs){  // 请求5M的内存空间
+                fs.root.getFile(file.name, {create: true}, function(fileEntry){
+                    fileEntry.createWriter(function(fileWriter){ // 在文件入口写入数据
+                        // console.log(fileWriter)
+                        fileWriter.write(file);
+                    });
+                    image.src = fileEntry.toURL();
+                }, function(e){
+                    alert('读取文件错误：'+e);
+                })
+            },function(e){
+                alert('文件系统错误：'+e);
+            });
+        }, false);
+
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>
