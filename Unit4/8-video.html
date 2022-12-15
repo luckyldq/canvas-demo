@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>播放视频</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    canvas{
+        border: 1px solid #000;margin: 10px;vertical-align: top;
+    }
+    .btn-box{
+        float: left;padding:20px 10px;margin-left: 50px;
+    }
+    input[type=range]{
+        cursor: pointer;display: block;
+    }
+</style>
+</head>
+<body>
+    <canvas id="mycanvas"></canvas>
+    <!-- <video src="../images/movie.mp4" controls></video> -->
+
+    <script type="module">
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+        const offscreenCanvas = document.createElement('canvas'),
+              offscreenCanvasCtx = offscreenCanvas.getContext('2d');
+
+        const CW = 400,
+              CH = 400;
+        canvas.width = CW;
+        canvas.height = CH;
+        offscreenCanvas.width = CW;
+        offscreenCanvas.height = CH;
+
+        const video = document.createElement('video');
+        video.src = '../images/movie.mp4';
+        video.preload = 'preload';
+        video.autoplay = 'true';
+
+        document.body.appendChild(video);
+        
+        // 添加用户交互
+        canvas.addEventListener('click',function(){
+            video.play();
+            // ctx.drawImage(video, 0, 0, CW, CH);
+            // window.requestNextAnimationFrame(animate);  // // 封装的兼容方法
+            window.requestAnimationFrame(animate);
+        });
+
+        function animate(){
+            if (!video.ended) {
+                ctx.drawImage(video, 0, 0, CW, CH);
+                // window.requestNextAnimationFrame(animate);  // 封装的兼容方法
+                window.requestAnimationFrame(animate);
+            }
+        }
+
+        // 封装在canvas中绘制视频每一帧的方法
+        window.requestNextAnimationFrame = (function () {
+            var self = this;
+
+            // Workaround for Chrome 10 bug where Chrome does not pass the time to the animation function
+            if (window.webkitRequestAnimationFrame) {
+                const wrapper = function (time) {
+                    if (time === undefined) {
+                        time = +new Date();
+                    }
+                    self.callback(time);
+                };
+                const originalWebkitRAF = window.webkitRequestAnimationFrame;    
+                window.webkitRequestAnimationFrame = function (callback, element) {
+                    self.callback = callback;
+                    // Browser calls the wrapper and wrapper calls the callback
+                    originalWebkitRAF(wrapper, element);
+                }
+            }
+
+            // Workaround for Gecko 2.0, which has a bug in
+            // mozRequestAnimationFrame() that restricts animations
+            // to 30-40 fps.
+            if (window.mozRequestAnimationFrame) {
+                const userAgent = navigator.userAgent;
+                let index = userAgent.indexOf('rv:');
+
+                if (userAgent.indexOf('Gecko') != -1) {
+                    const geckoVersion = userAgent.substr(index + 3, 3);
+
+                    if (geckoVersion === '2.0') {
+                        // Forces the return statement to fall through
+                        // to the setTimeout() function.
+
+                        window.mozRequestAnimationFrame = undefined;
+                    }
+                }
+            }
+            
+            return window.requestAnimationFrame    ||
+                window.webkitRequestAnimationFrame ||
+                window.mozRequestAnimationFrame    ||
+                window.oRequestAnimationFrame      ||
+                window.msRequestAnimationFrame     ||
+                function (callback, element) {
+                    var start, finish;
+                    window.setTimeout( function () {
+                        start = +new Date();
+                        callback(start);
+                        finish = +new Date();
+                        // 1000 / 60 指1s执行60帧
+                        self.timeout = 1000 / 60 - (finish - start);
+                    }, self.timeout);
+                };
+        })();
+
+    </script>
+
+
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>
