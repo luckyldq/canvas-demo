@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>仪表盘定时动画</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    .select-box{
+        position: absolute;left: 20px;top: 20px;
+    }
+    canvas{
+        /* border: 1px solid #000; */
+        margin: 10px;
+        -webkit-box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+        -moz-box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+        box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+    }
+</style>
+</head>
+<body>
+    <div class="canvas-box">
+        <div class="select-box">时间：<input  /><button>开始</button></div>
+        <canvas id="mycanvas"></canvas>
+    </div>
+    <script src='../requestNextAnimationFrame.js'></script>
+    <script type="module">
+        import {drawGrid, windowToCanvas, drawCircle, strokeLine, drawText} from '../canvas.js'
+
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d',{willReadFrequently: true});
+        let w = 650,
+            h = 450;
+        canvas.width = w;
+        canvas.height = h;
+
+        const CIRCLE_INFO = { // 最大圆的参数
+            x: w/2,
+            y: h/2,
+            r: 205
+        };
+        // 定义常量
+        const ticksNum =128,  // 最大刻度数量
+              interval = 4, // 间隔
+              shiftDeg = -90; // 刻度数初始偏移度数
+        let curDeg = shiftDeg;  // 初始指针的度数
+
+        let isMove = false;  // 是否执行动画
+        let time = 0;  // 基于时间的动画
+
+        // ctx.shadowBlur=4;
+        // ctx.shadowOffsetY=2;
+        // ctx.shadowOffsetX=2;
+
+        // 获取元素
+        let button = document.querySelector('button'),
+            input = document.querySelector('input');
+        input.value = time;
+
+        // 基于时间的运动
+        drawAll();
+        // 转动指针
+        function animation(){
+            if(curDeg == shiftDeg){
+                isMove = false;
+                button.innerHTML = '开始';
+            }
+            if(!isMove) return;
+            ctx.clearRect(0, 0, w, h);
+            // 指针的度数 和 输入框的值
+            curDeg --;
+            input.value = curDeg - shiftDeg;
+
+            // drawHand((curDeg) * Math.PI / 180);
+            drawAll();
+            requestNextAnimationFrame(animation);
+        }
+
+        // 开始按钮事件
+        button.addEventListener('click', function(){
+            if(input.value){
+                changeAnimateStatus(this);
+                time = Number(input.value);
+                curDeg = shiftDeg + time;
+            }
+        });
+        function changeAnimateStatus(obj){
+            isMove = !isMove;
+            obj.innerHTML = isMove?'停止':'开始';
+            isMove && requestNextAnimationFrame(animation);
+        }
+
+        function drawAll(){
+            // 绘制网格
+            ctx.save();
+            drawGrid({
+                ctx
+            });
+            ctx.restore();
+
+            ctx.save();
+            // 绘制圆盘
+            drawLoop({
+                ctx,
+                x: CIRCLE_INFO.x,
+                y: CIRCLE_INFO.y,
+                r: CIRCLE_INFO.r,
+                deltaR: 20
+            });
+            ctx.restore();
+
+            // 绘制圆盘内饰线
+            drawCircle({
+                ctx,
+                x: CIRCLE_INFO.x,
+                y: CIRCLE_INFO.y,
+                r: CIRCLE_INFO.r - 20 - 10,
+                style: 'rgba(0,0,0,0.1)'
+            });
+
+            // 绘制刻度
+            drawTicks();
+
+            // 绘制指针
+            ctx.save();
+            drawHand(curDeg * Math.PI / 180);
+            ctx.restore();
+        }
+
+        /* 
+        绘制环形
+        */
+        function drawLoop({
+            ctx,x,y,r,
+            deltaR,
+            style
+        }){
+            ctx.shadowColor='rgba(0,0,0,0.7)';
+            ctx.shadowOffsetX=3;
+            ctx.shadowOffsetY=3;
+            ctx.shadowBlur=6;
+            ctx.beginPath();
+            ctx.strokeStyle= 'rgba(100, 140, 230, 0.5)';
+            // 外圆
+            ctx.arc(x, y, r, 0, 2*Math.PI, true);
+            ctx.stroke();
+            // 内圆
+            ctx.strokeStyle='rgba(0,0,0,0.1)';
+            ctx.arc(x, y, r-deltaR, 0, 2*Math.PI, false);
+            ctx.stroke();
+
+            ctx.fillStyle='rgba(100,140,230,0.1)';
+            ctx.fill();
+            
+        }
+        /* 
+        绘制指针
+        */
+        function drawHand(angle = 0){
+            ctx.save();
+            drawCircle({
+                ctx,
+                x: CIRCLE_INFO.x,
+                y: CIRCLE_INFO.y,
+                r: 10,
+                style: 'rgba(0, 0, 0, 0.5)',
+                isFill: true,
+                fillStyle: 'rgba(80, 190, 240, 0.6)'
+            });
+            // 确定线的末端位置
+            // let angle = -Math.PI/4;
+            let endX = CIRCLE_INFO.x + CIRCLE_INFO.r * Math.cos(angle);
+            let endY = CIRCLE_INFO.y + CIRCLE_INFO.r * Math.sin(angle);
+            strokeLine({
+                ctx,
+                x0: CIRCLE_INFO.x,
+                y0: CIRCLE_INFO.y,
+                x1: endX,
+                y1: endY,
+                style: 'goldenrod'
+            });
+            drawCircle({
+                ctx,
+                x: endX,
+                y: endY,
+                r: 5,
+                style: 'rgba(100, 140, 230, 0.9)',
+                isFill: true,
+                fillStyle: 'rgba(250, 250, 0, 0.3)'
+            });
+            ctx.restore();
+        }
+        /* 
+        绘制刻度  360度，128个刻度
+        */
+        function drawTicks(){
+            let baseR = CIRCLE_INFO.r - 20;
+            let perAngle = 360 / ticksNum; // 每个刻度的角度
+            let perDeg = Math.PI*2 / ticksNum; // 每个刻度的弧度
+
+            for(let i=0;i<ticksNum;i++){
+                let angle = i * perDeg;
+                let delta = i%interval == 0?15: 5; 
+                let needText = i%8 == 0?true:false;
+
+                let x0 = CIRCLE_INFO.x + (baseR - delta )* Math.cos(angle);
+                let y0 = CIRCLE_INFO.y + (baseR - delta )* Math.sin(angle);
+                let x1 = CIRCLE_INFO.x + baseR * Math.cos(angle);
+                let y1 = CIRCLE_INFO.y + baseR* Math.sin(angle);
+                strokeLine({
+                    ctx,
+                    x0,
+                    y0,
+                    x1,
+                    y1,
+                    style:'rgba(100, 140, 230, 0.7)'
+                });
+                let textX = CIRCLE_INFO.x + (baseR - delta*2 )* Math.cos(angle);
+                let textY = CIRCLE_INFO.y + (baseR - delta*2 )* Math.sin(angle);
+                ctx.shadowColor='rgba(0,0,0,0.7)';
+
+                let text = Math.ceil((i*perAngle - shiftDeg)%360);
+
+                needText && drawText({
+                    ctx,
+                    // text: i==0?0:Math.ceil((ticksNum-i)*perAngle),  // 数字逆时针变大
+                    text,  // 数字顺时针变大
+                    x: textX,
+                    y: textY,
+                    font: '12px Helvetica',
+                    isStroke: false,
+                    isFill: true,
+                    fillStyle: 'rgba(0, 0, 230, 0.9)'
+                });
+            }
+        }
+    </script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>

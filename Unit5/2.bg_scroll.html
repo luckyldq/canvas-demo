@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>背景滚动</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    canvas{
+        border: 1px solid #000;margin: 10px;vertical-align: top;
+    }
+    .btn-box{
+        float: left;padding:20px 10px;margin-left: 50px;
+    }
+    input[type=range]{
+        cursor: pointer;display: block;
+    }
+</style>
+</head>
+<body>
+    <canvas id="mycanvas"></canvas>
+    <!-- <video src="../images/movie.mp4" controls></video> -->
+
+    <script src='../requestNextAnimationFrame.js'></script>
+    <script type="module">
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+        const offscreenCanvas = document.createElement('canvas'),
+              offscreenCanvasCtx = offscreenCanvas.getContext('2d');
+
+        const CW = 800,
+              CH = 600;
+        canvas.width = CW;
+        canvas.height = CH;
+        offscreenCanvas.width = CW;
+        offscreenCanvas.height = CH;
+
+        let image = new Image();
+        image.src = '../images/sky.png';
+        image.onload = function(){
+            requestNextAnimationFrame(animate);
+        }
+        
+        let bgOffset, // 背景的偏移
+            bgSpeed = 30, // 背景的移动速度
+            fps = 0; // 帧速率
+        let lastTime;
+        
+        function calculateFps(now){
+            fps = 1000 / (now - lastTime);
+            lastTime = now;
+            return fps;
+        }   
+        
+        function draw(){
+            ctx.clearRect(0, 0, CW, CH);
+            ctx.save();
+            bgOffset = bgOffset < CW ? bgOffset + bgSpeed/fps : 0;
+            ctx.translate(-bgOffset, 0);
+            ctx.drawImage(image, 0, 0);
+            ctx.drawImage(image, image.width-10, 0);
+            ctx.restore();
+        }
+        
+        function animate(now){
+            if(now === undefined){
+                now = +new Date();
+            }
+            calculateFps(now);
+            draw();
+            requestNextAnimationFrame(animate);
+        }
+
+    </script>
+
+
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>

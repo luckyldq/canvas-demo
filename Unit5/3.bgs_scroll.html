@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>多物体一起滚动</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    canvas{
+        border: 1px solid #000;margin: 10px;vertical-align: top;
+    }
+    .btn-box{
+        float: left;padding:20px 10px;margin-left: 50px;
+    }
+    input[type=range]{
+        cursor: pointer;display: block;
+    }
+</style>
+</head>
+<body>
+    <canvas id="mycanvas"></canvas>
+    <!-- <video src="../images/movie.mp4" controls></video> -->
+
+    <script src='../requestNextAnimationFrame.js'></script>
+    <script type="module">
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+        const offscreenCanvas = document.createElement('canvas'),
+              offscreenCanvasCtx = offscreenCanvas.getContext('2d');
+
+        const CW = 800,
+              CH = 600;
+        canvas.width = CW;
+        canvas.height = CH;
+        offscreenCanvas.width = CW;
+        offscreenCanvas.height = CH;
+
+        let image = new Image(),
+            tree = new Image(),
+            nearTree = new Image(),
+            grass = new Image(),
+            grass2 = new Image();
+
+        image.src = '../images/sky.png';
+        tree.src = '../images/smalltree.png';
+        nearTree.src = '../images/tree-twotrunks.png';
+        grass.src = '../images/grass.png';
+        grass2.src = '../images/grass2.png';
+
+        image.onload = function(){
+            requestNextAnimationFrame(animate);
+        }
+        
+        let bgOffset, // 背景的偏移
+            bgSpeed = 10, // 背景的移动速度
+            treeOffset, treeSpeed = 15,
+            nearTreeOffset, nearTreeSpeed = 20,
+            grassOffset, grassSpeed = 25,
+            grass2Offset, grass2Speed = 30,
+
+            fps = 0; // 帧速率
+        let lastTime = 0;
+        
+        function calculateFps(now){
+            fps = 1000 / (now - lastTime);
+            lastTime = now;
+            return fps;
+        }   
+        
+        function draw(){
+            bgOffset = bgOffset < CW ? bgOffset + bgSpeed/fps : 0;
+            treeOffset = treeOffset < CW ? treeOffset + treeSpeed/fps : 0;
+            nearTreeOffset = nearTreeOffset < CW ? nearTreeOffset + nearTreeSpeed/fps : 0;
+            grassOffset = grassOffset < CW ? grassOffset + grassSpeed/fps : 0;
+            grass2Offset = grass2Offset < CW ? grass2Offset + grass2Speed/fps : 0;
+
+            ctx.clearRect(0, 0, CW, CH);
+            // 绘制背景
+            ctx.save();
+            ctx.translate(-bgOffset, 0);
+            ctx.drawImage(image, 0, 0);
+            ctx.drawImage(image, image.width-10, 0);
+            ctx.restore();
+            // 绘制小树
+            ctx.save();
+            ctx.translate(-treeOffset, 0);
+            ctx.drawImage(tree, 0, 240);
+            ctx.drawImage(tree, 300, 240);
+            ctx.drawImage(tree, 400, 240);
+            ctx.drawImage(tree, 600, 240);
+            ctx.drawImage(tree, 1000, 240);
+            ctx.restore();
+            // 绘制大树
+            ctx.save();
+            ctx.translate(-nearTreeOffset, 0);
+            ctx.drawImage(nearTree, 100, 190);
+            ctx.drawImage(nearTree, 500, 190);
+            ctx.drawImage(nearTree, 1300, 190);
+            ctx.restore();
+            // 绘制小草
+            ctx.save();
+            ctx.translate(-grassOffset, 0);
+            ctx.drawImage(grass, 0, 360);
+            ctx.drawImage(grass, grass.width, 360);
+            ctx.restore();
+            // 绘制小草2
+            ctx.save();
+            ctx.translate(-grass2Offset, 0);
+            ctx.drawImage(grass2, 0, 380);
+            ctx.drawImage(grass2, grass2.width, 380);
+            ctx.restore();
+        }
+        
+        function animate(now){
+            if(now === undefined){
+                now = +new Date();
+            }
+            calculateFps(now);
+            draw();
+            requestNextAnimationFrame(animate);
+        }
+
+    </script>
+
+
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>
