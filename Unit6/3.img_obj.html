@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>图像绘制器</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    canvas{
+        border: 1px solid #000;margin: 10px;vertical-align: top;
+        box-shadow: 2px 2px 10px 0px #000000;
+    }
+    .btn-box{
+        float: left;padding:20px 10px;margin-left: 50px;
+    }
+    input[type=range]{
+        cursor: pointer;display: block;
+    }
+</style>
+</head>
+<body>
+    <canvas id="mycanvas"></canvas>
+    <!-- <video src="../images/movie.mp4" controls></video> -->
+
+    <script src='../requestNextAnimationFrame.js'></script>
+    <script type="module">
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+
+        const CW = 800,
+              CH = 600;
+        canvas.width = CW;
+        canvas.height = CH;
+
+        import {drawGrid, windowToCanvas} from '../canvas.js'
+
+        // 绘制背景
+        drawGrid({ctx});
+
+        // 精灵绘制器
+        // 构造器 精灵对象
+        var Sprite = function(name, painter, behaviors){
+            if(name !== undefined) this.name = name;
+            if(painter !== undefined) this.painter = painter;
+
+            this.top = 0;
+            this.left = 0;
+            this.width = 10;
+            this.height = 10;
+            this.velocityX = 0; // 精灵水平速度
+            this.velocityY = 0; // 精灵垂直速度
+
+            this.visible = true;
+            this.animating = false;
+            this.behaviors = behaviors || []; // 精灵的行为
+
+            return this;
+        }
+        Sprite.prototype = {
+            update:function(context, time){  // 更新精灵,基于时间
+                for(var i=0; i<this.behaviors.length; ++i){
+                    this.behaviors[i].execute(this, context, time);
+                }
+            },
+            paint: function(context){  // 绘制精灵
+                if(this.painter !== undefined && this.visible){
+                    this.painter.paint(this, context);
+                }
+            }
+        }
+
+        // 构造器 图像对象
+        var ImagePainter = function(imageUrl){
+            this.image = new Image();
+            this.image.src = imageUrl;
+        }
+        ImagePainter.prototype = {
+            paint: function(sprite, context){
+                let _this = this;
+                if(this.image.complete){  // complete 判断图片是否加载完成
+                    // console.log('complete');
+                    sprite.width = this.image.width;
+                    sprite.height = this.image.height;
+                    context.drawImage(this.image, sprite.left, sprite.top, sprite.width, sprite.height);
+                }else{
+                    this.image.onload = function(e){
+                        // console.log('onload');
+                        sprite.width = this.width;
+                        sprite.height = this.height;
+                        context.drawImage(_this.image, sprite.left, sprite.top, sprite.width, sprite.height);
+                    }
+                }
+            }
+        }
+        
+        // 绘制图像
+        var bomb = new Sprite('bomb', new ImagePainter('../images/bomb.png'));
+        bomb.left = 220;
+        bomb.top = 80;
+        bomb.width = 180;
+        bomb.height = 130;
+
+        bomb.paint(ctx);
+
+    </script>
+
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>

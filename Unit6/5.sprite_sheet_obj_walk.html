@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>精灵表绘制器 -- 抽象行为对象</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    canvas{
+        border: 1px solid #000;margin: 10px;vertical-align: top;
+        box-shadow: 2px 2px 10px 0px #000000;
+    }
+    .btn-box{
+        float: left;padding:20px 10px;margin-left: 50px;
+    }
+    input[type=range]{
+        cursor: pointer;display: block;
+    }
+</style>
+</head>
+<body>
+    <canvas id="mycanvas"></canvas>
+    <!-- <video src="../images/movie.mp4" controls></video> -->
+
+    <script src='../requestNextAnimationFrame.js'></script>
+    <script type="module">
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+
+        const CW = 800,
+              CH = 600;
+        canvas.width = CW;
+        canvas.height = CH;
+
+        import {drawGrid, windowToCanvas} from '../canvas.js'
+
+        // 精灵绘制器
+        // 构造器 精灵对象
+        var Sprite = function(name, painter, behaviors){
+            if(name !== undefined) this.name = name;
+            if(painter !== undefined) this.painter = painter;
+
+            this.top = 0;
+            this.left = 0;
+            this.width = 10;
+            this.height = 10;
+            this.velocityX = 0; // 精灵水平速度
+            this.velocityY = 0; // 精灵垂直速度
+
+            this.visible = true;
+            this.animating = false;
+            this.behaviors = behaviors || []; // 精灵的行为
+
+            return this;
+        }
+        Sprite.prototype = {
+            update:function(context, time){  // 更新精灵,基于时间
+                for(var i=0; i<this.behaviors.length; ++i){
+                    this.behaviors[i].execute(this, context, time);
+                }
+            },
+            paint: function(context){  // 绘制精灵
+                if(this.painter !== undefined && this.visible){
+                    this.painter.paint(this, context);
+                }
+            }
+        }
+
+        // 构造器 精灵表绘制器 cells -- 精灵表单元个数
+        var SpriteSheetPainter = function(cells){
+            this.cells = cells || [];
+            this.cellIndex = 0;
+        }
+        SpriteSheetPainter.prototype = {
+            advance: function(){
+                if(this.cellIndex == this.cells.length-1){
+                    this.cellIndex = 0;
+                }else{
+                    this.cellIndex ++;
+                }
+            },
+            paint: function(sprite, context){
+                var cell = this.cells[this.cellIndex];
+                context.drawImage(spritesheet, cell.left, cell.top, cell.width, cell.height, sprite.left, sprite.top, cell.width, cell.height);
+            }
+        }
+
+        // 绘制精灵表
+        var spritesheet = new Image();
+        spritesheet.src = '../images/running-sprite-sheet.png';
+
+        // 绘制精灵表动画
+        var runnerCells = [
+            { left: 0,   top: 0, width: 47, height: 64 },
+            { left: 55,  top: 0, width: 44, height: 64 },
+            { left: 107, top: 0, width: 39, height: 64 },
+            { left: 150, top: 0, width: 46, height: 64 },
+            { left: 208, top: 0, width: 49, height: 64 },
+            { left: 265, top: 0, width: 46, height: 64 },
+            { left: 320, top: 0, width: 42, height: 64 },
+            { left: 380, top: 0, width: 35, height: 64 },
+            { left: 425, top: 0, width: 35, height: 64 },
+        ];
+
+        // 定义精灵的行为对象
+        var runInPlace = {
+            lastAdvance: 0, // 上一次更新的时间
+            PAGEFLIP_INTERVAL: 100, // 定义页面刷新频率
+            execute: function(sprite, context, time){
+                if(time - this.lastAdvance >= this.PAGEFLIP_INTERVAL){
+                    sprite.painter.advance();
+                    this.lastAdvance = time;
+                }
+            }
+        }
+
+        var sprite = new Sprite('runner', new SpriteSheetPainter(runnerCells), [runInPlace]);
+        sprite.left = 100;
+        sprite.top = 100;
+        if(spritesheet.complete){
+            requestNextAnimationFrame(animation);
+        }else{
+            spritesheet.onload = function(){
+                requestNextAnimationFrame(animation);
+            }
+        }
+        
+        // 动画
+        function animation(time){
+            ctx.clearRect(0, 0, CW, CH);
+            // 绘制背景
+            drawGrid({ctx});
+            ctx.drawImage(spritesheet, 0, 0);
+            // 精灵表动画
+            sprite.update(ctx, time);
+            sprite.paint(ctx);
+            requestNextAnimationFrame(animation);
+        }
+
+        requestNextAnimationFrame(animation);
+    </script>
+
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>

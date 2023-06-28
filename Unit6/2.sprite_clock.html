@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>精灵时钟</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+    }
+    canvas{
+        border: 1px solid #000;margin: 10px;vertical-align: top;
+        box-shadow: 2px 2px 10px 0px #000000;
+    }
+    .btn-box{
+        float: left;padding:20px 10px;margin-left: 50px;
+    }
+    input[type=range]{
+        cursor: pointer;display: block;
+    }
+</style>
+</head>
+<body>
+    <canvas id="mycanvas"></canvas>
+    <!-- <video src="../images/movie.mp4" controls></video> -->
+
+    <script src='../requestNextAnimationFrame.js'></script>
+    <script type="module">
+        const canvas = document.querySelector('canvas');
+        const context = canvas.getContext('2d');
+
+        const CW = 800,
+              CH = 600;
+        canvas.width = CW;
+        canvas.height = CH;
+
+        import {drawGrid, windowToCanvas} from '../canvas.js'
+
+        var CLOCK_RADIUS = CH/2 - 15,  // 时钟表盘半径
+            HOUR_HAND_TRUNCATION = 35; // 时针指针的差值
+
+        // 构造器 精灵对象
+        var Sprite = function(name, painter, behaviors){
+            if(name !== undefined) this.name = name;
+            if(painter !== undefined) this.painter = painter;
+
+            this.top = 0;
+            this.left = 0;
+            this.width = 10;
+            this.height = 10;
+            this.velocityX = 0; // 精灵水平速度
+            this.velocityY = 0; // 精灵垂直速度
+
+            this.visible = true;
+            this.animating = false;
+            this.behaviors = behaviors || []; // 精灵的行为
+
+            return this;
+        }
+        Sprite.prototype = {
+            update:function(context, time){  // 更新精灵,基于时间
+                for(var i=0; i<this.behaviors.length; ++i){
+                    this.behaviors[i].execute(this, context, time);
+                }
+            },
+            paint: function(context){  // 绘制精灵
+                if(this.painter !== undefined && this.visible){
+                    this.painter.paint(this, context);
+                }
+            }
+        }
+
+        // 小球绘制器
+        var ballPainter = {
+            paint: function(sprite, context){
+                var x = sprite.left + sprite.width/2,
+                    y = sprite.top + sprite.height/2,
+                    width = sprite.width,
+                    height = sprite.height,
+                    radius = sprite.width / 2;
+
+                context.save();
+                context.beginPath();
+                context.arc(x, y, radius, 0, 2*Math.PI, false);
+                context.clip();
+
+                context.shadowColor = 'rgb(0,0,0)';
+                context.shadowOffsetX = -4;
+                context.shadowOffsetY = -4;
+                context.shadowBlur = 8;
+
+                context.lineWidth = 2;
+                context.strokeStyle = 'rgba(100, 100, 195)';
+                context.fillStyle = 'rgba(30, 144, 255, 0.15)';
+                
+                context.fill();
+                context.stroke();
+                context.restore();
+            }
+        }
+
+        // 实例化一个精灵对象，叫ball
+        var ball = new Sprite('ball', ballPainter);
+
+        function animation(){
+            context.clearRect(0, 0, CW, CH);
+            drawGrid({ctx:context});
+            drawClockFace();
+            drawHands();
+            requestNextAnimationFrame(animation);
+        }
+        requestNextAnimationFrame(animation);
+
+        // 指针绘制器 loc：时分秒的值
+        function drawHand(loc, isHour){
+            var angle = (Math.PI * 2) * (loc / 60) - Math.PI/2, // 指针的旋转度数
+                handRadius = isHour ? CLOCK_RADIUS - HOUR_HAND_TRUNCATION : CLOCK_RADIUS,  // 指针的半径
+                lineEnd = {  // 指针末端坐标
+                    x: canvas.width/2 + Math.cos(angle)*(handRadius - ball.width/2),
+                    y: canvas.height/2 + Math.sin(angle)*(handRadius - ball.width/2)
+                };
+            
+            context.beginPath();
+            context.moveTo(canvas.width/2, canvas.height/2);
+            context.lineTo(lineEnd.x, lineEnd.y);
+            context.stroke();
+            
+            // 小球的坐标
+            ball.left = canvas.width/2  + Math.cos(angle)*handRadius - ball.width/2; 
+            ball.top  = canvas.height/2 + Math.sin(angle)*handRadius - ball.height/2;
+            ball.paint(context);
+        }
+
+        // 绘制指针和小球  绘制中，共享一个小球对象
+        function drawHands(){
+            var date = new Date(),
+                hour = date.getHours();
+            // 秒针和小球
+            ball.width = 20;
+            ball.height = 20;
+            drawHand(date.getSeconds(), false);
+            // 分针和小球
+            ball.width = 35;
+            ball.height = 35;
+            drawHand(date.getMinutes(), false);
+            // 时针和小球
+            ball.width = 50;
+            ball.height = 50;
+            hour = hour > 12 ? hour - 12 : hour;
+            drawHand(hour*5 + (date.getMinutes()/60)*5, true);  // 一圈是60，时间的值是12
+            // 表盘中心小球
+            ball.width = 10;
+            ball.height = 10;
+            ball.left = canvas.width/2 - ball.width/2;
+            ball.top = canvas.height/2 - ball.height/2;
+            ballPainter.paint(ball, context);
+        } 
+        
+        // 绘制表盘
+        function drawClockFace() {
+            context.beginPath();
+            context.arc(canvas.width/2, canvas.height/2,
+                        CLOCK_RADIUS, 0, Math.PI*2, false);
+
+            context.save();
+            context.strokeStyle = 'rgba(0,0,0,0.2)';
+            context.stroke();
+            context.restore();
+        }
+    </script>
+
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>

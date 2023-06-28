@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, initial-scale=1.0, width=device-width" />
+<meta name="format-detection" content="telephone=no, email=no, date=no, address=no">
+<title>点击按钮移动物体 -- 基于时间的运动</title>
+<style>
+    body, html{
+        position: relative;padding:0;margin: 0;overflow: hidden;
+        height: 100vh;width: 100vw;
+    }
+    #mycanvas{
+        position: absolute; left: 0px;top: 20px;margin-left: 20px;
+        background: lightskyblue;
+        border: thin solid rbga(0,0,0,1.0);
+        -webkit-box-shadow: rgba(0,0,0,0.5) 4px 4px 6px;
+        -moz-box-shadow: rgba(0,0,0,0.5) 4px 4px 6px;
+        box-shadow: rgba(0,0,0,0.5) 4px 4px 6px;
+    }
+    #btns {
+        
+    }
+    #btnCanvas{
+        background: rgba(255,255,255,0.4);
+        position: absolute;
+        left: 137px;
+        top: 170px;
+        border: thin solid rbga(0,0,0,1.0);
+        -webkit-box-shadow: rgba(0,0,0,0.5) 4px 4px 6px;
+        -moz-box-shadow: rgba(0,0,0,0.5) 4px 4px 6px;
+        box-shadow: rgba(0,0,0,0.5) 4px 4px 6px;
+    }
+</style>
+</head>
+<body>
+    <canvas id="mycanvas" width="350" height="300"></canvas>
+    <div id="btns">
+        <canvas id="btnCanvas" width="110" height="50"></canvas>
+    </div>
+    <!-- 脚本 -->
+    <script src='../requestNextAnimationFrame.js'></script>
+    <script type="module">
+        const canvas = document.querySelector('#mycanvas'),
+              ctx = canvas.getContext('2d');
+
+        const btnCanvas = document.querySelector('#btnCanvas'),
+              btnboxCtx = btnCanvas.getContext('2d');
+
+        const CW = 350,
+              CH = 300;
+        canvas.width = CW;
+        canvas.height = CH;
+
+        // 精灵绘制器
+        // 构造器 精灵对象
+        var Sprite = function(name, painter, behaviors){
+            if(name !== undefined) this.name = name;
+            if(painter !== undefined) this.painter = painter;
+
+            this.top = 0;
+            this.left = 0;
+            this.width = 10;
+            this.height = 10;
+            this.velocityX = 0; // 精灵水平速度
+            this.velocityY = 0; // 精灵垂直速度
+
+            this.visible = true;
+            this.animating = false;
+            this.behaviors = behaviors || []; // 精灵的行为
+
+            return this;
+        }
+        Sprite.prototype = {
+            update:function(context, time){  // 更新精灵,基于时间
+                for(var i=0; i<this.behaviors.length; ++i){
+                    this.behaviors[i].execute(this, context, time);
+                }
+            },
+            paint: function(context){  // 绘制精灵
+                if(this.painter !== undefined && this.visible){
+                    this.painter.paint(this, context);
+                }
+            }
+        }
+
+        import {drawGrid, windowToCanvas} from '../canvas.js'
+
+        // 定义常量
+        const ARROW_MARGIN = 10; // 箭头之间的外边距
+
+        paintBoxArrows(btnboxCtx);
+
+        // 监听鼠标事件
+        btnCanvas.onmousedown = function canvasMouseDown(e){
+            let rect = btnCanvas.getBoundingClientRect(),
+                x = e.x || e.clientX,
+                y = e.y || e.clientY;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            if(x - rect.left > btnCanvas.width/2){
+                pullBallRight();
+            }
+            else{
+                pullBallLeft();
+            }
+        }
+
+        // 小球向右移动
+        function pullBallRight(){}
+        // 小球向左移动
+        function pullBallLeft(){}
+        
+        // 绘制箭头
+        function paintBoxArrows(context){
+            // 定义箭头不同状态的填充色
+            const NORMAL_COLOR = 'rgba(100,140,230,0.8)',
+                  ACTIVE_COLOR = 'rgba(255,255,0,0.8)';
+            context.save();
+            context.fillStyle = NORMAL_COLOR;
+            // context.lineJoin = "round";
+            paintLeftArrow(context);
+            paintRightArrow(context);
+            context.restore();
+        }
+        function paintLeftArrow(context) {
+            paintArrow(context);
+        }
+        function paintRightArrow(context) {
+            context.save();
+            context.translate(btnCanvas.width, 0);
+            context.scale(-1, 1);
+            paintArrow(context);
+            context.restore();
+        }
+        function paintArrow(context){
+            context.beginPath();
+            context.moveTo(btnCanvas.width/2 - ARROW_MARGIN/2, ARROW_MARGIN/2);
+            context.lineTo(btnCanvas.width/2 - ARROW_MARGIN/2, btnCanvas.height - ARROW_MARGIN/2);
+            context.lineTo(ARROW_MARGIN, btnCanvas.height/2);
+            context.closePath();
+            context.fill();
+            // context.stroke();
+        }
+        
+        // 绘制小圆圈 -- 精灵对象
+        let ballBehavior = {};
+        let ball = new Sprite('ball',{
+            paint:function(sprite, context){
+                context.save();
+                context.beginPath();
+                context.arc(sprite.left + sprite.width / 2, sprite.top + sprite.height/2, 14, 0, 2*Math.PI, false);
+                context.clip();
+
+                context.shadowColor = 'rgb(0,0,255)';
+                context.shadowOffsetX = -4;
+                context.shadowOffsetY = -4;
+                context.shadowBlur = 8;
+
+                context.lineWidth = 2;
+                context.strokeStyle = 'rgb(100,100,195)';
+                context.stroke();
+
+                context.beginPath();
+                context.arc(sprite.left + sprite.width/2, sprite.top + sprite.height/2,
+                            14/2, 0, Math.PI*2, false);
+                context.clip();
+
+                context.shadowColor = 'rgb(255,255,0)';
+                context.shadowOffsetX = -4;
+                context.shadowOffsetY = -4;
+                context.shadowBlur = 8;
+                context.stroke();
+
+                context.restore();
+
+            }
+        }, [ballBehavior]);
+
+        // ball.left = 100;
+        // ball.top = 20;
+        // ball.paint(ctx);
+        
+        // 绘制小横杆 -- 精灵对象
+        let ledeg = new Sprite('ledeg',{
+            paint:function(sprite, context){
+                context.save();
+                context.shadowColor = 'rgba(0,0,0,0.8)';
+                context.shadowBlur = 8;
+                context.shadowOffsetX = 4;
+                context.shadowOffsetY = 4;
+
+                context.fillStyle = 'rgba(255,255,0,0.6)';
+                context.fillRect(sprite.left,sprite.top,
+                                sprite.width,sprite.height);
+                context.restore();
+            }
+        });
+        
+        ledeg.left = 100;
+        ledeg.top = 20;
+        ledeg.paint(ctx);
+
+    </script>
+
+    <script src="https://cdn.bootcss.com/vConsole/3.3.0/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+</body>
+</html>
